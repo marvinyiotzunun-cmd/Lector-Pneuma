@@ -40,5 +40,5 @@ export const COLORES_TEMA = {
 
 export const FUENTES = {
   serif: '"Literata", Georgia, "Times New Roman", serif',
-  sans: '"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif',
+  sans: '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif',
 } as const

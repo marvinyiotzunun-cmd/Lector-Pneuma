@@ -181,7 +181,7 @@ export default function Lector() {
               <h4>Tipo de letra</h4>
               <div className="fila">
                 <button className="ficha f-serif" aria-pressed={pref.fuente === 'serif'} onClick={() => setPref({ ...pref, fuente: 'serif' })}>Literata</button>
-                <button className="ficha f-sans" aria-pressed={pref.fuente === 'sans'} onClick={() => setPref({ ...pref, fuente: 'sans' })}>Figtree</button>
+                <button className="ficha f-sans" aria-pressed={pref.fuente === 'sans'} onClick={() => setPref({ ...pref, fuente: 'sans' })}>Inter</button>
               </div>
             </>
           )}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import * as datos from '../lib/datos'
 import { modoDemo, supabase } from '../lib/supabase'
 import type { Libro } from '../lib/tipos'
+import Monograma from '../marca/Monograma'
 
 export default function Biblioteca() {
   const [libros, setLibros] = useState<Libro[] | null>(null)
@@ -16,8 +17,9 @@ export default function Biblioteca() {
     <div className="biblioteca">
       <header className="cabecera">
         <div className="marca">
-          <h1>Pneuma</h1>
-          <span>Lector digital</span>
+          <Monograma className="monograma" />
+          <h1><small>Publicaciones</small>Pneuma</h1>
+          <span className="sub">Lector digital</span>
         </div>
         {supabase && <button className="btn secundario" onClick={() => supabase!.auth.signOut()}>Salir</button>}
       </header>
@@ -59,9 +61,10 @@ export default function Biblioteca() {
 function Portada({ libro }: { libro: Libro }) {
   const url = datos.urlPortada(libro)
   if (url) return <img className="portada" src={url} alt={`Portada de ${libro.titulo}`} loading="lazy" />
-  const color = libro.color ?? '#2C5878'
+  const color = libro.color ?? '#04044A'
   return (
     <div className="portada generada" style={{ background: `linear-gradient(160deg, ${color}, color-mix(in srgb, ${color} 60%, #000))` }}>
+      <Monograma variante="blanco" className="pm" />
       <span className="pt">{libro.titulo}</span>
       <span className="pa">Publicaciones Pneuma</span>
     </div>

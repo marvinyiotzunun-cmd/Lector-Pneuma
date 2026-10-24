@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
+import Monograma from '../marca/Monograma'
 
 export default function Entrar() {
   const [modo, setModo] = useState<'entrar' | 'registro'>('entrar')
@@ -24,7 +25,7 @@ export default function Entrar() {
   return (
     <div className="entrar">
       <form onSubmit={enviar}>
-        <div className="marca"><h1>Pneuma</h1><span>Lector digital</span></div>
+        <div className="marca"><Monograma className="monograma" titulo="Publicaciones Pneuma" /><h1><small>Publicaciones</small>Pneuma</h1></div>
         <p>{modo === 'entrar' ? 'Entra con la cuenta que usaste para comprar tus libros.' : 'Crea tu cuenta de lector.'}</p>
         <label htmlFor="correo">Correo</label>
         <input id="correo" type="email" autoComplete="email" required value={correo} onChange={(e) => setCorreo(e.target.value)} />

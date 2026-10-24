@@ -6,12 +6,12 @@ const DEMO: Libro[] = [
   {
     id: 'demo-salmos', titulo: 'Salmos escogidos', autor: 'Reina-Valera 1909', formato: 'epub',
     descripcion: 'Libro de muestra en EPUB (dominio público).', archivo_ruta: 'salmos-escogidos.epub',
-    portada_ruta: null, color: '#2C5878',
+    portada_ruta: null, color: '#04044A',
   },
   {
     id: 'demo-juan', titulo: 'El Verbo hecho carne', autor: 'Juan 1 · Reina-Valera 1909', formato: 'pdf',
     descripcion: 'Libro de muestra en PDF (dominio público).', archivo_ruta: 'el-verbo-hecho-carne.pdf',
-    portada_ruta: null, color: '#7A4E2D',
+    portada_ruta: null, color: '#CD0100',
   },
 ]
 
