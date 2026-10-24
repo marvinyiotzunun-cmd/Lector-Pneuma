@@ -34,7 +34,7 @@ Para conectar Supabase, copia `.env.example` a `.env` y completa `VITE_SUPABASE_
 - Panel editorial: subir libros y portadas, precios, aprobar depósitos.
 - Tienda web con pagos (PayPal, pasarela de tarjetas, Fri, depósito con comprobante).
 - Empaquetado para Play Store y App Store con Capacitor.
-- Identidad visual de Publicaciones Pneuma (los colores actuales son provisionales).
+- Validar la tipografía propuesta (Fraunces + Inter) y el lockup oficial del nombre del sello.
 
 ---
 Creado por Tecnoiagt · [www.tecnoiagt.com](https://www.tecnoiagt.com)
