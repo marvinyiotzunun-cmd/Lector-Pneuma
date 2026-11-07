@@ -10,7 +10,7 @@ export interface InfoObra {
 export interface FuenteLector {
   yo(): Promise<Usuario | null>
   pedirEnlace(correo: string): Promise<void>
-  verificar(token: string): Promise<void>
+  verificar(token: string): Promise<string | undefined>
   salir(): Promise<void>
   registrarDispositivo(): Promise<void> // lanza ErrorApi 409 limite_dispositivos con datos.dispositivos
   dispositivos(): Promise<(Dispositivo & { actual: boolean })[]>

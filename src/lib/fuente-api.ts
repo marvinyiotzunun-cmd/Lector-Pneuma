@@ -51,16 +51,17 @@ export const fuenteApi: FuenteLector = {
   },
   async verificar(token) {
     try {
-      const r = await api<{ sesion: { token: string } }>('/auth/verificar', {
+      const r = await api<{ sesion: { token: string }; destino?: string }>('/auth/verificar', {
         method: 'POST', json: { token, dispositivo: { id: idDispositivo(), nombre: nombreDispositivo(), plataforma: plataforma() } },
       })
       if (esApp()) guardarLocal('sesion_token', r.sesion.token)
+      return r.destino
     } catch (e) {
       // Con el límite de dispositivos lleno, la sesión se crea igual (sin dispositivo); la app lo resuelve después.
       if (e instanceof ErrorApi && e.codigo === 'limite_dispositivos') {
         const token = (e.datos as { sesion?: { token: string } }).sesion?.token
         if (esApp() && token) guardarLocal('sesion_token', token)
-        return
+        return (e.datos as { destino?: string }).destino
       }
       throw e
     }

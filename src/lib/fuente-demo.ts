@@ -49,7 +49,7 @@ const clave = (k: string, id: string) => `demo:${k}:${id}`
 export const fuenteDemo: FuenteLector = {
   async yo() { return { correo: CORREO } },
   async pedirEnlace() {},
-  async verificar() {},
+  async verificar() { return undefined },
   async salir() {},
   async registrarDispositivo() {
     const lista = leerLocal<Dispositivo[]>('demo:dispositivos', [

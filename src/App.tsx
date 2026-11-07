@@ -33,8 +33,9 @@ export default function App() {
   const arrancar = useCallback(async (token?: string | null) => {
     try {
       if (token) {
-        await fuente.verificar(token)
-        history.replaceState(null, '', location.pathname + location.hash.split('?')[0])
+        const destino = await fuente.verificar(token)
+        const hash = destino?.startsWith('#/') ? destino : location.hash.split('?')[0]
+        history.replaceState(null, '', location.pathname + hash)
       }
       const u = await fuente.yo()
       if (!u) return setEstado({ tipo: 'fuera' })
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/" element={<Biblioteca correo={estado.correo} onSalir={salir} />} />
           <Route path="/dispositivos" element={<Dispositivos />} />
           <Route path="/leer/:id" element={<LectorPorLibro correo={estado.correo} />} />
+          <Route path="/muestra/:id" element={<LectorPorLibro correo={estado.correo} />} />
         </Routes>
       </Suspense>
     </HashRouter>
