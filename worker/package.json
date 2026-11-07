@@ -1,0 +1,18 @@
+{
+  "name": "pneuma-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "migrar:local": "wrangler d1 migrations apply pneuma --local"
+  },
+  "dependencies": {
+    "hono": "^4.10.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261107.1",
+    "typescript": "~5.8.3",
+    "wrangler": "^4.45.0"
+  }
+}
