@@ -72,7 +72,7 @@ const datosCarrito = JSON.stringify({ libro_id: libro.id, slug: libro.slug, titu
               <div class="fila">
                 {libro.digital.precio_compra_gtq != null && <button class="btn secundario chico" type="button" data-agregar="compra" data-precio={libro.digital.precio_compra_gtq}>Comprar digital {quetzales(libro.digital.precio_compra_gtq)}</button>}
                 {libro.digital.precio_alquiler_gtq != null && <button class="btn secundario chico" type="button" data-agregar="alquiler" data-precio={libro.digital.precio_alquiler_gtq}>Alquilar {libro.digital.dias_alquiler} días {quetzales(libro.digital.precio_alquiler_gtq)}</button>}
-                {libro.digital.paginas_muestra > 0 && <a class="enlace" href={`${SITIO.lector}#/muestra/${libro.id}`}>Leer muestra gratis</a>}
+                {libro.digital.paginas_muestra > 0 && <a class="enlace" href={`${SITIO.lector}/#/muestra/${libro.id}`}>Leer muestra gratis</a>}
               </div>
               <p class="nota">Se lee en el lector de Pneuma, con tu correo. {libro.digital.en_suscripcion && 'Incluido en la suscripción.'}</p>
             </div>

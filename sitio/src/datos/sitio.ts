@@ -22,7 +22,7 @@ export const SITIO = {
   envio_gtq: 35,
   // Rutas de otros módulos del mismo dominio.
   ventanilla: '/panel#/ventanilla',
-  lector: '/lector',
+  lector: '/lector',  // el lector se sirve en /lector/ (HashRouter)
 }
 
 export function enlaceWhatsApp(texto?: string) {
