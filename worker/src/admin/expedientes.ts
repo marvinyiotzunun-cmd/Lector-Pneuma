@@ -3,8 +3,8 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../env'
 import { requiereRol } from '../lib/sesion'
 import {
-  ESTADOS, ErrorVentanilla, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarCambio, descargarDocumento, despues,
-  entero, guardarDocumento, nuevoId, responderError, texto,
+  DICTAMENES, ESTADOS, ErrorVentanilla, REVISIONES, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarCambio, descargarDocumento, despues,
+  NOMBRE_DICTAMEN, entero, infoEtapas, guardarDocumento, nuevoId, responderError, texto,
   type EstadoExpediente, type ExpedienteFila, type TipoDocumento,
 } from '../ventanilla/servicio'
 
@@ -94,15 +94,17 @@ adminExpedientes.get('/expedientes/:id', async (c) => {
   return c.json({ ...exp, historial: historial.results, documentos: documentos.results, solicitante: solicitante.results[0] ?? null })
 })
 
-/** Cambia la etapa (1 a 8). Avisa por correo al ministerio. Pasar a la 8 marca el expediente como publicado. */
+/** Cambia la etapa. Avisa por correo al ministerio. Llegar a una etapa que publica marca el expediente como publicado. */
 adminExpedientes.post('/expedientes/:id/etapa', async (c) => {
   const u = c.get('usuario')!
   const exp = await obtener(c.env.DB, c.req.param('id'))
   const cuerpo = await c.req.json<{ etapa: number; nota?: string; avisar?: boolean }>()
   const etapa = entero(cuerpo.etapa)
-  if (!etapa || etapa < 1 || etapa > 8) throw new ErrorVentanilla(400, 'La etapa debe ser de 1 a 8.')
+  const fases = await infoEtapas(c.env.DB)
+  if (!etapa || etapa < 1 || etapa > fases.ultima) throw new ErrorVentanilla(400, `La etapa debe ser de 1 a ${fases.ultima}.`)
   if (etapa === exp.etapa) throw new ErrorVentanilla(409, 'El expediente ya está en esa etapa.')
-  const estado: EstadoExpediente = etapa === 8 ? 'publicado' : 'en_curso'
+  if (exp.estado === 'rechazado') throw new ErrorVentanilla(409, 'El expediente fue rechazado; reanúdelo antes de moverlo.')
+  const estado: EstadoExpediente = etapa >= fases.publica ? 'publicado' : 'en_curso'
   const nota = texto(cuerpo.nota, 4000)
   const hid = nuevoId()
   await c.env.DB.batch([
@@ -121,7 +123,7 @@ adminExpedientes.post('/expedientes/:id/estado', async (c) => {
   const exp = await obtener(c.env.DB, c.req.param('id'))
   const cuerpo = await c.req.json<{ estado: EstadoExpediente; nota?: string; avisar?: boolean }>()
   if (!ESTADOS.includes(cuerpo.estado) || cuerpo.estado === 'publicado')
-    throw new ErrorVentanilla(400, 'Estado no válido. Para publicar, pase el expediente a la etapa 8.')
+    throw new ErrorVentanilla(400, 'Estado no válido. Para publicar, pase el expediente a la etapa de publicación.')
   if (cuerpo.estado === exp.estado) throw new ErrorVentanilla(409, 'El expediente ya tiene ese estado.')
   const nota = texto(cuerpo.nota, 4000)
   if ((cuerpo.estado === 'requiere_cambios' || cuerpo.estado === 'rechazado') && !nota)
@@ -155,8 +157,8 @@ adminExpedientes.post('/expedientes/:id/notas', async (c) => {
 adminExpedientes.patch('/expedientes/:id', async (c) => {
   const exp = await obtener(c.env.DB, c.req.param('id'))
   const cuerpo = await c.req.json<Record<string, unknown>>()
-  const editables = ['revision', 'responsable_id', 'libro_id', 'titulo', 'subtitulo', 'autores', 'genero', 'publico',
-    'sinopsis', 'paginas_aprox', 'modalidad', 'tiraje_estimado'] as const
+  const editables = ['revision', 'dictamen', 'responsable_id', 'libro_id', 'titulo', 'subtitulo', 'autores', 'genero', 'publico',
+    'sinopsis', 'semblanza_autor', 'paginas_aprox', 'modalidad', 'tiraje_estimado'] as const
   const sets: string[] = []
   const valores: unknown[] = []
   for (const k of editables) {
@@ -165,6 +167,8 @@ adminExpedientes.patch('/expedientes/:id', async (c) => {
     if (k === 'paginas_aprox' || k === 'tiraje_estimado') v = entero(v)
     else v = typeof v === 'string' ? (v.trim() || null) : null
     if (k === 'modalidad' && !['impreso', 'digital', 'ambos'].includes(String(v))) throw new ErrorVentanilla(400, 'Modalidad no válida.')
+    if (k === 'revision' && v && !(REVISIONES as readonly string[]).includes(String(v))) throw new ErrorVentanilla(400, 'Modalidad de revisión no válida (A, B o C).')
+    if (k === 'dictamen' && v && !(DICTAMENES as readonly string[]).includes(String(v))) throw new ErrorVentanilla(400, 'Resultado de dictamen no válido.')
     if ((k === 'titulo' || k === 'autores' || k === 'sinopsis') && !v) throw new ErrorVentanilla(400, `El campo ${k} no puede quedar vacío.`)
     sets.push(`${k} = ?`)
     valores.push(v)
@@ -172,6 +176,15 @@ adminExpedientes.patch('/expedientes/:id', async (c) => {
   if (!sets.length) throw new ErrorVentanilla(400, 'No hay cambios.')
   await c.env.DB.prepare(`UPDATE expedientes SET ${sets.join(', ')}, actualizado_en = ${AHORA_SQL} WHERE id = ?`)
     .bind(...valores, exp.id).run()
+  // El resultado del dictamen queda en el historial y se avisa al ministerio.
+  const dictamen = cuerpo.dictamen as (typeof DICTAMENES)[number] | undefined
+  if (dictamen && dictamen !== exp.dictamen) {
+    const hid = nuevoId()
+    const nota = `Dictamen de la Junta Editorial: ${NOMBRE_DICTAMEN[dictamen]}.${typeof cuerpo.nota === 'string' && cuerpo.nota.trim() ? `\n\n${cuerpo.nota.trim().slice(0, 4000)}` : ''}`
+    await c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, nota, autor_id) VALUES (?1, ?2, 'nota', ?3, ?4)`)
+      .bind(hid, exp.id, nota, c.get('usuario')!.id).run()
+    despues(c, avisarCambio(c.env, exp.id, hid, nota))
+  }
   return c.json(await obtener(c.env.DB, exp.id))
 })
 
@@ -212,11 +225,35 @@ adminExpedientes.get('/etapas', async (c) => {
 
 adminExpedientes.put('/etapas/:numero', async (c) => {
   const numero = entero(c.req.param('numero'))
-  if (!numero || numero > 8) throw new ErrorVentanilla(404, 'Etapa no encontrada.')
+  const cuerpo = await c.req.json<{ nombre: string; descripcion?: string; responsable?: string; dias_estimados?: number | null; publica?: boolean }>()
+  const nombre = texto(cuerpo.nombre, 80)
+  if (!nombre) throw new ErrorVentanilla(400, 'La etapa necesita un nombre.')
+  const r = await c.env.DB.prepare('UPDATE etapas_editoriales SET nombre = ?, descripcion = ?, responsable = ?, dias_estimados = ?, publica = ? WHERE numero = ?')
+    .bind(nombre, texto(cuerpo.descripcion, 500) ?? '', texto(cuerpo.responsable, 120), entero(cuerpo.dias_estimados), cuerpo.publica ? 1 : 0, numero).run()
+  if (!r.meta.changes) throw new ErrorVentanilla(404, 'Etapa no encontrada.')
+  return c.json({ ok: true })
+})
+
+/** Agrega una etapa al final. */
+adminExpedientes.post('/etapas', async (c) => {
   const cuerpo = await c.req.json<{ nombre: string; descripcion?: string; dias_estimados?: number | null }>()
   const nombre = texto(cuerpo.nombre, 80)
   if (!nombre) throw new ErrorVentanilla(400, 'La etapa necesita un nombre.')
-  await c.env.DB.prepare('UPDATE etapas_editoriales SET nombre = ?, descripcion = ?, dias_estimados = ? WHERE numero = ?')
-    .bind(nombre, texto(cuerpo.descripcion, 500) ?? '', entero(cuerpo.dias_estimados), numero).run()
+  const { ultima } = await infoEtapas(c.env.DB)
+  await c.env.DB.prepare('INSERT INTO etapas_editoriales (numero, nombre, descripcion, dias_estimados, publica) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(publica), 0) FROM etapas_editoriales))')
+    .bind(ultima + 1, nombre, texto(cuerpo.descripcion, 500) ?? '', entero(cuerpo.dias_estimados)).run()
+  return c.json({ ok: true, numero: ultima + 1 }, 201)
+})
+
+/** Quita la última etapa, solo si ningún expediente está en ella ni la usó en su historial. */
+adminExpedientes.delete('/etapas/:numero', async (c) => {
+  const numero = entero(c.req.param('numero'))
+  const { ultima, total } = await infoEtapas(c.env.DB)
+  if (numero !== ultima) throw new ErrorVentanilla(409, 'Solo se puede quitar la última etapa.')
+  if (total <= 2) throw new ErrorVentanilla(409, 'El proceso necesita al menos dos etapas.')
+  const usada = await c.env.DB.prepare(`SELECT 1 FROM expedientes WHERE etapa = ?1
+      UNION SELECT 1 FROM expediente_historial WHERE etapa_nueva = ?1 OR etapa_anterior = ?1 LIMIT 1`).bind(numero).first()
+  if (usada) throw new ErrorVentanilla(409, 'Hay expedientes que pasaron por esta etapa; cámbiele el nombre en lugar de quitarla.')
+  await c.env.DB.prepare('DELETE FROM etapas_editoriales WHERE numero = ?').bind(numero).run()
   return c.json({ ok: true })
 })

@@ -27,11 +27,20 @@ contenidosPublicos.get('/contenidos/:clave', async (c) => {
   return c.json(fila)
 })
 
+/** Las etapas del proceso editorial, para la página "Proceso de publicación" del sitio. */
+contenidosPublicos.get('/proceso/etapas', async (c) => {
+  const { results } = await c.env.DB.prepare('SELECT numero, nombre, descripcion, responsable FROM etapas_editoriales ORDER BY numero').all()
+  c.header('Cache-Control', 'public, max-age=60')
+  return c.json(results)
+})
+
 contenidosPublicos.get('/formatos', async (c) => {
   const { results } = await c.env.DB
-    .prepare(`SELECT id, nombre, descripcion, nombre_archivo, tipo_mime FROM formatos_oficiales WHERE publicado = 1 ORDER BY orden, nombre`)
+    .prepare(`SELECT id, nombre, descripcion, nombre_archivo, tipo_mime AS tipo, tamano AS tamano_bytes
+      FROM formatos_oficiales WHERE publicado = 1 ORDER BY orden, nombre`)
     .all<{ id: string }>()
   const base = new URL(c.req.url).origin
+  c.header('Cache-Control', 'public, max-age=60')
   return c.json(results.map((f) => ({ ...f, url: `${base}/api/formatos/${f.id}/archivo` })))
 })
 
@@ -91,9 +100,10 @@ adminContenidos.post('/formatos', async (c) => {
   const id = nuevoId()
   const ruta = `formatos/${id}-${nombreSeguro(archivo.name)}`
   await c.env.ARCHIVOS.put(ruta, archivo.stream(), { httpMetadata: { contentType: archivo.type || 'application/octet-stream' } })
-  await c.env.DB.prepare(`INSERT INTO formatos_oficiales (id, nombre, descripcion, ruta, nombre_archivo, tipo_mime, orden)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`)
-    .bind(id, nombre, texto(f.get('descripcion'), 500) ?? '', ruta, archivo.name.slice(0, 200), archivo.type || null, entero(f.get('orden')) ?? 0)
+  await c.env.DB.prepare(`INSERT INTO formatos_oficiales (id, nombre, descripcion, ruta, nombre_archivo, tipo_mime, tamano, orden)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(id, nombre, texto(f.get('descripcion'), 500) ?? '', ruta, archivo.name.slice(0, 200), archivo.type || null, archivo.size,
+      entero(f.get('orden')) ?? 0)
     .run()
   return c.json({ ok: true, id }, 201)
 })

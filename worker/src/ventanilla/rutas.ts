@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import type { Env, Variables } from '../env'
 import { requiereSesion } from '../lib/sesion'
 import {
-  ErrorVentanilla, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarDocumentos, avisarSolicitudNueva, descargarDocumento, despues,
+  DOCUMENTOS_SOLICITUD, ErrorVentanilla, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarDocumentos, avisarSolicitudNueva, descargarDocumento, despues,
   entero, guardarDocumento, nuevoId, responderError, siguienteCodigo, texto, validarArchivo, type Ctx, type ExpedienteFila, type TipoDocumento,
 } from './servicio'
 
@@ -50,6 +50,9 @@ ventanilla.get('/etapas', async (c) => {
   return c.json(results)
 })
 
+/** Lista de documentos de la solicitud, para que el formulario muestre cuáles son obligatorios. */
+ventanilla.get('/documentos-solicitud', (c) => c.json(DOCUMENTOS_SOLICITUD))
+
 ventanilla.get('/expedientes', async (c) => {
   const u = c.get('usuario')!
   const { results } = await c.env.DB
@@ -63,7 +66,8 @@ ventanilla.get('/expedientes', async (c) => {
 /**
  * Solicitud nueva (multipart/form-data).
  * Campos: ministerio_id, titulo, subtitulo, autores, genero, publico, sinopsis, paginas_aprox, modalidad, tiraje_estimado.
- * Archivos: manuscrito (obligatorio), carta_autorizacion, creditos, otro (puede repetirse).
+ * Archivos: los de DOCUMENTOS_SOLICITUD (manuscrito en Word, currículum, declaración, Carta de Autorización y
+ * Formato de Créditos obligatorios; índice, permisos, foto del autor, propuesta de portada y otros opcionales).
  */
 ventanilla.post('/expedientes', async (c) => {
   const u = c.get('usuario')!
@@ -81,11 +85,12 @@ ventanilla.post('/expedientes', async (c) => {
   if (!['impreso', 'digital', 'ambos'].includes(modalidad)) throw new ErrorVentanilla(400, 'Modalidad no válida.')
 
   const archivos: { archivo: File; tipo: TipoDocumento }[] = []
-  for (const tipo of ['manuscrito', 'carta_autorizacion', 'creditos', 'otro'] as const) {
-    for (const v of f.getAll(tipo)) if (v instanceof File && v.size > 0) archivos.push({ archivo: v, tipo })
+  for (const d of DOCUMENTOS_SOLICITUD) {
+    for (const v of f.getAll(d.tipo)) if (v instanceof File && v.size > 0) archivos.push({ archivo: v, tipo: d.tipo })
   }
-  if (!archivos.some((a) => a.tipo === 'manuscrito')) throw new ErrorVentanilla(400, 'Adjunte el manuscrito.')
-  if (archivos.length > 12) throw new ErrorVentanilla(400, 'Máximo 12 archivos por solicitud.')
+  const faltan = DOCUMENTOS_SOLICITUD.filter((d) => d.obligatorio && !archivos.some((a) => a.tipo === d.tipo)).map((d) => d.nombre)
+  if (faltan.length) throw new ErrorVentanilla(400, `Falta adjuntar ${faltan.join(', ')}.`)
+  if (archivos.length > 20) throw new ErrorVentanilla(400, 'Máximo 20 archivos por solicitud.')
 
   // Se valida todo antes de tomar el correlativo, para no dejar huecos en la numeración.
   for (const a of archivos) validarArchivo(a.archivo, a.tipo)
@@ -104,9 +109,10 @@ ventanilla.post('/expedientes', async (c) => {
   const historialId = nuevoId()
   await c.env.DB.batch([
     c.env.DB.prepare(`INSERT INTO expedientes (id, codigo, ministerio_id, solicitante_id, titulo, subtitulo, autores, genero,
-        publico, sinopsis, paginas_aprox, modalidad, tiraje_estimado) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)`)
+        publico, sinopsis, semblanza_autor, paginas_aprox, modalidad, tiraje_estimado) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)`)
       .bind(id, codigo, ministerioId, u.id, titulo, texto(f.get('subtitulo'), 200), autores, texto(f.get('genero'), 80),
-        texto(f.get('publico'), 200), sinopsis, entero(f.get('paginas_aprox')), modalidad, entero(f.get('tiraje_estimado'))),
+        texto(f.get('publico'), 200), sinopsis, texto(f.get('semblanza_autor'), 3000), entero(f.get('paginas_aprox')), modalidad,
+        entero(f.get('tiraje_estimado'))),
     ...subidos.map((s) => s.sentencia),
     c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, etapa_nueva, estado_nuevo, nota, autor_id)
         VALUES (?1, ?2, 'creado', 1, 'en_curso', ?3, ?4)`)
@@ -140,7 +146,7 @@ ventanilla.post('/expedientes/:codigo/documentos', async (c) => {
     throw new ErrorVentanilla(409, 'Este expediente ya está cerrado.')
   const f = await c.req.formData()
   const tipo = (texto(f.get('tipo'), 30) ?? 'otro') as TipoDocumento
-  const permitidos: TipoDocumento[] = ['manuscrito', 'carta_autorizacion', 'creditos', 'pruebas', 'otro']
+  const permitidos: TipoDocumento[] = [...DOCUMENTOS_SOLICITUD.map((d) => d.tipo), 'pruebas']
   if (!TIPOS_DOCUMENTO.includes(tipo) || !permitidos.includes(tipo)) throw new ErrorVentanilla(400, 'Tipo de documento no válido.')
   const archivos = f.getAll('archivo').filter((v): v is File => v instanceof File && v.size > 0)
   if (!archivos.length) throw new ErrorVentanilla(400, 'Adjunte al menos un archivo.')

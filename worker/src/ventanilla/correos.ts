@@ -33,21 +33,21 @@ function marco(titulo: string, cuerpo: string, boton?: { texto: string; url: str
 </td></tr></table></td></tr></table></body></html>`
 }
 
-/** Barra con las 8 etapas; la actual resaltada. */
-function linea(etapa: number) {
-  const celdas = Array.from({ length: 8 }, (_, i) => {
+/** Barra con las etapas; la actual resaltada. */
+function linea(etapa: number, total: number) {
+  const celdas = Array.from({ length: total }, (_, i) => {
     const n = i + 1
     const color = n < etapa ? NAVY : n === etapa ? ROJO : '#D9D2C3'
     return `<td style="height:6px;background:${color};border-radius:3px"></td><td style="width:4px"></td>`
   }).join('')
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:14px 0 6px"><tr>${celdas}</tr></table>
-  <div style="font-size:12px;color:#716D64">Etapa ${etapa} de 8</div>`
+  <div style="font-size:12px;color:#716D64">Etapa ${etapa} de ${total}</div>`
 }
 
 interface DatosExp { codigo: string; titulo: string; ministerio: string; autores: string }
 
 export function correoAvisoEtapa(d: {
-  expediente: DatosExp; etapa: number; etapaNombre: string; estado: EstadoExpediente; nota: string | null; url: string
+  expediente: DatosExp; total: number; etapa: number; etapaNombre: string; estado: EstadoExpediente; nota: string | null; url: string
 }) {
   const e = d.expediente
   const esNueva = d.etapa === 1 && d.estado === 'en_curso'
@@ -59,12 +59,12 @@ export function correoAvisoEtapa(d: {
   <p style="margin:0 0 4px;font-size:15px"><strong>«${esc(e.titulo)}»</strong></p>
   <p style="margin:0;color:#716D64;font-size:14px">${esc(e.autores)} · ${esc(e.ministerio)}</p>
   <p style="margin:12px 0 0;font-size:14px">Expediente <strong style="font-family:Consolas,monospace">${esc(e.codigo)}</strong></p>
-  ${linea(d.etapa)}
+  ${linea(d.etapa, d.total)}
   <p style="margin:12px 0 0;font-size:14px">Etapa actual: <strong>${esc(d.etapaNombre)}</strong>${d.estado !== 'en_curso' ? ` · Estado: <strong>${esc(NOMBRE_ESTADO[d.estado])}</strong>` : ''}</p>
   ${d.nota ? `<div style="margin:16px 0 0;padding:12px 14px;background:#F6F2EA;border-left:3px solid ${ROJO};font-size:14px;white-space:pre-wrap">${esc(d.nota)}</div>` : ''}`
   const texto = [
     titulo, `«${e.titulo}» · ${e.autores} · ${e.ministerio}`, `Expediente ${e.codigo}`,
-    `Etapa ${d.etapa} de 8: ${d.etapaNombre}`, d.estado !== 'en_curso' ? `Estado: ${NOMBRE_ESTADO[d.estado]}` : '',
+    `Etapa ${d.etapa} de ${d.total}: ${d.etapaNombre}`, d.estado !== 'en_curso' ? `Estado: ${NOMBRE_ESTADO[d.estado]}` : '',
     d.nota ?? '', `Ver el expediente: ${d.url}`,
   ].filter(Boolean).join('\n\n')
   return { asunto, html: marco(titulo, cuerpo, { texto: 'Ver mi expediente', url: d.url }), texto }
@@ -83,7 +83,7 @@ export function correoNuevaSolicitud(d: { expediente: DatosExp & { sinopsis: str
 
 export function correoInvitacionMinisterio(d: { ministerio: string; nombre: string | null; url: string }) {
   const asunto = `Su cuenta en la ventanilla de Publicaciones Pneuma · ${d.ministerio}`
-  const cuerpo = `<p style="margin:0;font-size:14px">${d.nombre ? `Hola, ${esc(d.nombre)}. ` : ''}La Dirección Editorial le abrió una cuenta para el ministerio <strong>${esc(d.ministerio)}</strong>. Desde la ventanilla puede presentar obras para publicación, adjuntar el manuscrito y los documentos, y seguir cada expediente en sus ocho etapas.</p>
+  const cuerpo = `<p style="margin:0;font-size:14px">${d.nombre ? `Hola, ${esc(d.nombre)}. ` : ''}La Dirección Editorial le abrió una cuenta para el ministerio <strong>${esc(d.ministerio)}</strong>. Desde la ventanilla puede presentar obras para publicación, adjuntar el manuscrito y los documentos, y seguir cada expediente en todas las etapas del proceso editorial.</p>
   <p style="margin:12px 0 0;font-size:14px">Para entrar, escriba este mismo correo y le enviaremos un enlace de acceso; no necesita contraseña.</p>`
   const texto = `${asunto}\n\nPuede entrar en ${d.url} con este correo; le enviaremos un enlace de acceso.`
   return { asunto, html: marco('Bienvenido a la ventanilla editorial', cuerpo, { texto: 'Entrar a la ventanilla', url: d.url }), texto }

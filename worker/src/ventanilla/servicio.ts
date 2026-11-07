@@ -9,7 +9,22 @@ export type Ctx = Context<{ Bindings: Env; Variables: Variables }>
 export const ESTADOS = ['en_curso', 'requiere_cambios', 'en_pausa', 'rechazado', 'publicado'] as const
 export type EstadoExpediente = (typeof ESTADOS)[number]
 
-export const TIPOS_DOCUMENTO = ['manuscrito', 'carta_autorizacion', 'creditos', 'dictamen', 'portada', 'pruebas', 'otro'] as const
+export const TIPOS_DOCUMENTO = ['manuscrito', 'indice', 'curriculum', 'declaracion', 'carta_autorizacion', 'creditos', 'permisos',
+  'foto_autor', 'portada', 'dictamen', 'pruebas', 'otro'] as const
+
+/** Lo que el ministerio entrega con la solicitud (Manual General Administrativo, recepción de originales). */
+export const DOCUMENTOS_SOLICITUD: { tipo: TipoDocumento; nombre: string; obligatorio: boolean }[] = [
+  { tipo: 'manuscrito', nombre: 'el manuscrito completo en Word', obligatorio: true },
+  { tipo: 'curriculum', nombre: 'el currículum del autor', obligatorio: true },
+  { tipo: 'declaracion', nombre: 'la declaración de originalidad y de uso de inteligencia artificial', obligatorio: true },
+  { tipo: 'carta_autorizacion', nombre: 'la Carta de Autorización', obligatorio: true },
+  { tipo: 'creditos', nombre: 'el Formato de Créditos', obligatorio: true },
+  { tipo: 'indice', nombre: 'el índice', obligatorio: false },
+  { tipo: 'permisos', nombre: 'los permisos de terceros', obligatorio: false },
+  { tipo: 'foto_autor', nombre: 'la fotografía del autor', obligatorio: false },
+  { tipo: 'portada', nombre: 'la propuesta de portada', obligatorio: false },
+  { tipo: 'otro', nombre: 'otros documentos', obligatorio: false },
+]
 export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number]
 
 export const NOMBRE_ESTADO: Record<EstadoExpediente, string> = {
@@ -24,7 +39,9 @@ export const MB = 1024 * 1024
 export const TAMANO_MAXIMO = 40 * MB
 
 const EXTENSIONES: Record<string, string[]> = {
-  manuscrito: ['doc', 'docx', 'odt', 'rtf', 'pdf', 'txt'],
+  manuscrito: ['doc', 'docx', 'odt', 'rtf'],   // el manual pide el manuscrito en Word
+  foto_autor: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+  dictamen: ['pdf', 'doc', 'docx', 'odt'],
   portada: ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'tif', 'tiff', 'psd', 'ai'],
   otro: ['pdf', 'doc', 'docx', 'odt', 'jpg', 'jpeg', 'png', 'webp', 'zip', 'xlsx', 'txt'],
 }
@@ -35,7 +52,7 @@ export const nuevoId = () => crypto.randomUUID()
 
 /** Error con el formato del contrato: {"error": {"codigo", "mensaje"}}. */
 export class ErrorVentanilla extends Error {
-  constructor(public estado: 400 | 403 | 404 | 409 | 413, mensaje: string, public codigo = CODIGOS[estado]) { super(mensaje) }
+  constructor(public estado: 400 | 403 | 404 | 409 | 413, mensaje: string, public codigo: string = CODIGOS[estado]) { super(mensaje) }
 }
 const CODIGOS = { 400: 'datos_invalidos', 403: 'sin_permiso', 404: 'no_encontrado', 409: 'conflicto', 413: 'archivo_grande' } as const
 
@@ -44,7 +61,7 @@ export function responderError(err: Error, c: Ctx) {
   throw err
 }
 
-/** Siguiente código del año: PNE-2026-0001. El correlativo se incrementa de forma atómica en D1. */
+/** Siguiente código del año: PNE-2026-001. El correlativo se incrementa de forma atómica en D1. */
 export async function siguienteCodigo(db: D1Database, fecha = new Date()): Promise<string> {
   const anio = fecha.getUTCFullYear()
   const fila = await db
@@ -52,7 +69,7 @@ export async function siguienteCodigo(db: D1Database, fecha = new Date()): Promi
               ON CONFLICT (anio) DO UPDATE SET ultimo = ultimo + 1 RETURNING ultimo`)
     .bind(anio)
     .first<{ ultimo: number }>()
-  return `PNE-${anio}-${String(fila!.ultimo).padStart(4, '0')}`
+  return `PNE-${anio}-${String(fila!.ultimo).padStart(3, '0')}`
 }
 
 /** Limpia el nombre de archivo para usarlo en la ruta de R2 y en la descarga. */
@@ -105,7 +122,7 @@ export interface ExpedienteFila {
   id: string; codigo: string; ministerio_id: string; ministerio: string; solicitante_id: string
   titulo: string; subtitulo: string | null; autores: string; genero: string | null; publico: string | null
   sinopsis: string; paginas_aprox: number | null; modalidad: string; tiraje_estimado: number | null
-  revision: string | null; etapa: number; etapa_nombre: string; estado: EstadoExpediente
+  semblanza_autor: string | null; revision: string | null; dictamen: string | null; etapa: number; etapa_nombre: string; estado: EstadoExpediente
   responsable_id: string | null; libro_id: string | null; creado_en: string; actualizado_en: string
 }
 
@@ -150,8 +167,9 @@ async function enviarATodos(env: Env, para: string[], asunto: string, html: stri
 
 /** Aviso de solicitud nueva: confirmación al ministerio y alerta a la Dirección Editorial. */
 export async function avisarSolicitudNueva(env: Env, expediente: ExpedienteFila, historialId: string) {
+  const { total } = await infoEtapas(env.DB)
   const alMinisterio = correoAvisoEtapa({
-    expediente, etapa: 1, etapaNombre: expediente.etapa_nombre, estado: expediente.estado,
+    expediente, total, etapa: 1, etapaNombre: expediente.etapa_nombre, estado: expediente.estado,
     nota: 'Recibimos su solicitud. La Dirección Editorial la revisará y le avisaremos de cada avance por este medio.',
     url: urlPanel(env, `/ventanilla/${expediente.codigo}`),
   })
@@ -173,8 +191,9 @@ export async function avisarDocumentos(env: Env, exp: ExpedienteFila, archivos: 
 export async function avisarCambio(env: Env, expedienteId: string, historialId: string, nota: string | null) {
   const exp = await env.DB.prepare(`${SELECT_EXPEDIENTE} WHERE e.id = ?`).bind(expedienteId).first<ExpedienteFila>()
   if (!exp) return
+  const { total } = await infoEtapas(env.DB)
   const correo = correoAvisoEtapa({
-    expediente: exp, etapa: exp.etapa, etapaNombre: exp.etapa_nombre, estado: exp.estado, nota,
+    expediente: exp, total, etapa: exp.etapa, etapaNombre: exp.etapa_nombre, estado: exp.estado, nota,
     url: urlPanel(env, `/ventanilla/${exp.codigo}`),
   })
   const ok = await enviarATodos(env, await correosDelMinisterio(env.DB, exp), correo.asunto, correo.html, correo.texto)
@@ -196,4 +215,19 @@ export function texto(v: unknown, max = 2000): string | null {
 export function entero(v: unknown): number | null {
   const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN
   return Number.isFinite(n) && n >= 0 ? Math.round(n) : null
+}
+
+// Resultados posibles del dictamen (Manual General Administrativo v2).
+export const DICTAMENES = ['aprobada', 'aprobada_con_cambios', 'devuelta', 'no_aprobada'] as const
+export const NOMBRE_DICTAMEN: Record<(typeof DICTAMENES)[number], string> = {
+  aprobada: 'Aprobada', aprobada_con_cambios: 'Aprobada con cambios', devuelta: 'Devuelta para reelaboración', no_aprobada: 'No aprobada',
+}
+export const REVISIONES = ['A', 'B', 'C', 'D', 'E', 'F'] as const
+
+/** Número de etapas y la primera que marca la obra como publicada. */
+export async function infoEtapas(db: D1Database) {
+  const f = await db.prepare(`SELECT COUNT(*) AS total, MAX(numero) AS ultima,
+      (SELECT MIN(numero) FROM etapas_editoriales WHERE publica = 1) AS publica FROM etapas_editoriales`)
+    .first<{ total: number; ultima: number; publica: number | null }>()
+  return { total: f?.total ?? 0, ultima: f?.ultima ?? 0, publica: f?.publica ?? f?.ultima ?? 0 }
 }
