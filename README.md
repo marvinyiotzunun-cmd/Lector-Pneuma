@@ -1,40 +1,46 @@
 # Lector Pneuma
 
-Lector digital de Publicaciones Pneuma (tipo Kindle): biblioteca personal y lectura de libros EPUB y PDF en web, Android y iPhone.
+Lector digital protegido de Publicaciones Pneuma (tipo Kindle) para la web y Android. Cubre las partidas 6, 8 y 9 del Paquete Integral.
 
-**Modelo de venta:** los libros se compran en la tienda web (PayPal, tarjeta, Fri, depósito). La app solo muestra y lee los libros que ya están en la biblioteca del usuario; no hay compras dentro de la app.
+**Modelo de venta:** los libros se compran en la tienda web (PayPal, tarjeta, Fri, depósito). La app solo lee los libros que ya están en la biblioteca del lector; no hay compras dentro de la app.
 
-## Qué incluye esta versión
+## Arquitectura
 
-- Biblioteca con portada, avance de lectura y formato de cada libro.
-- Lector EPUB (epub.js): páginas, índice, fondo claro, sepia o noche, tamaño y tipo de letra, marcadores, subrayados y notas.
-- Lector PDF (pdf.js): páginas ajustadas a la pantalla, zoom, índice del documento, fondos y marcadores.
-- Avance, marcadores y notas sincronizados en Supabase cuando hay sesión; en este dispositivo si no la hay.
-- Esquema de Supabase con seguridad por fila (`supabase/migrations/`): perfiles, catálogo, pedidos, biblioteca y datos de lectura. Los archivos de los libros están en un bucket privado y solo se entregan con enlace firmado a quien tiene el libro.
+- Este repositorio es el **cliente** (React + Vite). El servidor es un Worker de Cloudflare con D1 y R2; su contrato está en `docs/api.md` del repositorio del backend.
+- El libro nunca se entrega completo. `src/preparar/` convierte cada EPUB en páginas HTML saneadas y cada PDF en páginas WebP, y genera `manifiesto.json`. Todo eso se guarda en R2 bajo `obras/<id>/`.
+- El servidor entrega una página a la vez, ya con la marca de agua del correo del lector, y solo si el lector tiene acceso (compra, alquiler, suscripción, canje, cortesía o muestra).
+
+## Qué incluye
+
+- Entrada con enlace al correo, sin contraseña, y límite de dispositivos por cuenta (pantalla «Mis dispositivos»).
+- Biblioteca con tipo de acceso, avance y vencimiento del alquiler.
+- Lector página por página: índice, fondo claro, sepia o noche, tamaño y tipo de letra, marcadores, subrayados y notas sincronizados.
+- Muestras gratis: al terminar las páginas permitidas aparece «Aquí termina la muestra».
+- Protección por capas: marca de agua con el correo, copia limitada a 300 caracteres con atribución, sin menú contextual, sin impresión, PDF dibujado en canvas y solo dos páginas en memoria.
+- Lectura sin conexión (app): cada dispositivo crea un par de claves RSA que no se puede exportar; la clave del libro llega envuelta para ese dispositivo y las páginas se guardan cifradas con AES-GCM. El permiso dura 14 días y se renueva solo al tener internet. Detecta si se atrasa el reloj.
+- App Android (Capacitor 8): bloqueo de capturas y grabación de pantalla (`FLAG_SECURE`), sin respaldo de datos en la nube, y App Links para que el enlace del correo (`https://pneuma.gt/entrar`) abra la app.
 
 ## Uso local
 
 ```bash
 npm install
-npm run dev
+npm run dev          # modo demostración, sin backend
+npm run build        # web de producción (API en el mismo dominio)
+npm run build:app    # web para la app y copia a android/
 ```
 
-Sin variables de entorno la app arranca en **modo de demostración** con dos libros de muestra (Reina-Valera 1909, dominio público) generados por `scripts/generar_demo.py`.
+El modo demostración usa dos libros de muestra (Reina-Valera 1909, dominio público) generados por `scripts/generar_demo.py`, y simula en el navegador lo que hará el servidor.
 
-Para conectar Supabase, copia `.env.example` a `.env` y completa `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y aplica la migración de `supabase/migrations/`.
+## App Android
 
-### Cargar un libro (mientras no exista el panel editorial)
+El flujo `.github/workflows/android.yml` compila un APK de prueba en cada PR. Para el AAB firmado de Google Play agrega estos secretos al repositorio: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD`.
 
-1. Inserta el libro en la tabla `libros` (con `publicado = true`).
-2. Sube el archivo al bucket `libros` en la ruta `<id del libro>/<archivo>.epub` y guarda esa ruta en `archivo_ruta`.
-3. Un pedido marcado como `pagado` agrega el libro a la biblioteca del comprador automáticamente.
+El sitio `pneuma.gt` debe publicar `/.well-known/assetlinks.json` con el paquete `gt.pneuma.lector` y la huella del certificado de firma.
 
-## Próximos pasos
+## Pendiente
 
-- Panel editorial: subir libros y portadas, precios, aprobar depósitos.
-- Tienda web con pagos (PayPal, pasarela de tarjetas, Fri, depósito con comprobante).
-- Empaquetado para Play Store y App Store con Capacitor.
-- Identidad visual de Publicaciones Pneuma (los colores actuales son provisionales).
+- Cuenta de desarrollador de Google Play a nombre de Pneuma.
+- Validar la tipografía propuesta (Fraunces + Inter) y el lockup oficial del sello.
 
 ---
 Creado por Tecnoiagt · [www.tecnoiagt.com](https://www.tecnoiagt.com)
