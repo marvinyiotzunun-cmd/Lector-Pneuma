@@ -20,7 +20,7 @@ Sin contraseñas: enlace mágico al correo.
 | GET | `/api/yo` | sesión | `{id, correo, nombre, telefono, rol, dispositivo_id}`. El lector usa `correo` para la marca de agua. |
 | PATCH | `/api/yo` | sesión | `{nombre?, telefono?}`. |
 
-El enlace del correo apunta a `{SITIO_URL}/entrar?token=...`; esa página llama a `/api/auth/verificar`.
+El enlace del correo apunta a `{SITIO_URL}/entrar?token=...` (o a `{SITIO_URL}/panel?token=...` si `destino` empieza por `/panel`); esa página llama a `/api/auth/verificar` y luego navega a `destino`. En el 409 de límite de dispositivos la respuesta trae igual `usuario` y `sesion.token`, más `dispositivos` y `limite`.
 
 **Roles:** `lector`, `ministerio`, `editor`, `admin` (columna `usuarios.rol`). Los correos en `ADMIN_CORREOS` (variable del Worker) entran como `admin` la primera vez.
 
@@ -46,6 +46,7 @@ El `id` lo genera el cliente una vez (UUID guardado en el dispositivo). Las ruta
 | GET | `/api/catalogo/:slug_o_id` | Ficha de un libro. |
 | GET | `/api/planes` | Planes de suscripción activos. |
 | GET | `/api/portadas/:libro_id` | Imagen de portada (pública, en caché). |
+| GET | `/api/ajustes/publicos` | `{envio_gtq, whatsapp, direccion_recogida, cuentas_bancarias: [{banco, tipo, numero, nombre}], billeteras: [{nombre, numero, instrucciones}], tipo_cambio_usd}` para mostrar envío y datos de pago antes de pedir. |
 
 Cada libro:
 
@@ -129,11 +130,11 @@ Item: `{modalidad: "impreso"|"compra"|"alquiler"|"plan", libro_id?, plan_id?, ca
 
 | Método | Ruta | Quién | Qué hace |
 |---|---|---|---|
-| POST | `/api/pedidos` | sesión (o público con `correo`) | `{items, metodo, correo?, nombre?, telefono?, entrega?: {direccion, municipio, departamento, referencia?}, iglesia_nombre?}` → `{pedido, enlace_pago|null, instrucciones_pago|null}`. Si el total es 0 se marca pagado de una vez. |
+| POST | `/api/pedidos` | sesión (o público con `correo` o `telefono`) | `{items, metodo, correo?, nombre?, telefono?, entrega?: {nombre?, direccion, municipio, departamento, referencia?}, iglesia_nombre?, notas?}` → 201 `{pedido: {id, codigo, estado, metodo, subtotal_gtq, envio_gtq, total_gtq, items, entrega, ...}, enlace_pago|null, instrucciones_pago: {texto, cuentas, monto_gtq, referencia}|null}`. Sin `entrega` con impresos = recoger en la oficina, sin envío. Libros digitales y planes exigen correo. Si el total es 0 se marca pagado de una vez. |
 | GET | `/api/pedidos` | sesión | Mis pedidos. |
-| GET | `/api/pedidos/:id` | dueño | Detalle. También con `?codigo=PN-000123&correo=…` sin sesión. |
+| GET | `/api/pedidos/:id` | dueño | Detalle. `:id` puede ser el id o el código. Sin sesión: `?codigo=PN-000123&correo=…` (vale igual para comprobante y captura de PayPal). |
 | POST | `/api/pedidos/:id/comprobante` | dueño | Cuerpo = archivo (`image/*` o `application/pdf`, máx. 8 MB), `?referencia=` opcional. Pasa a `en_revision`. |
-| POST | `/api/pedidos/:id/paypal/capturar` | dueño | Después de volver de PayPal: captura la orden. |
+| POST | `/api/pedidos/:id/paypal/capturar` | dueño | Después de volver de PayPal (la URL de éxito trae `&pedido=<id>`): captura la orden. PayPal cobra en US$ al `tipo_cambio_usd`. |
 | POST | `/api/pagos/recurrente/webhook` | Recurrente | Aviso firmado (Svix). |
 | POST | `/api/pagos/paypal/webhook` | PayPal | Aviso verificado con la API de PayPal. |
 
@@ -163,7 +164,7 @@ Del backend (`worker/src/rutas/admin.ts`):
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| GET/POST | `/api/admin/libros` | Lista todos (publicados o no) / crea. |
+| GET/POST | `/api/admin/libros` | Lista todos (publicados o no) / crea (`titulo` y `autor` obligatorios; genera `slug`). Campos: columnas de `libros` con dinero como `precio_impreso_gtq`, `precio_compra_gtq`, `precio_alquiler_gtq`, booleanos `true/false` y `portada_url` calculado. |
 | GET/PATCH/DELETE | `/api/admin/libros/:id` | Ficha / cambia / borra. |
 | PUT | `/api/admin/libros/:id/portada` | Cuerpo = imagen. |
 | PUT | `/api/admin/libros/:id/manifiesto` | Cuerpo = `manifiesto.json`. Actualiza `total_paginas_digital`. |
@@ -178,13 +179,14 @@ Del backend (`worker/src/rutas/admin.ts`):
 | GET/POST/PATCH/DELETE | `/api/admin/faq[/:id]` | Preguntas frecuentes del asistente. |
 | GET/PATCH | `/api/admin/ajustes` | Ajustes (`{clave: valor}`). Solo admin. |
 | GET | `/api/admin/huella/:huella` | Rastrea una filtración: quién, qué libro, qué página, cuándo. |
-| GET | `/api/admin/resumen` | Ventas del mes, pedidos por revisar, lectores activos. |
+| GET | `/api/admin/resumen` | Ventas del mes, pedidos por revisar, lectores activos, gasto del asistente. |
+| POST | `/api/admin/sitio/reconstruir` | Llama a `PAGES_DEPLOY_HOOK` para regenerar el sitio estático. |
 
 De la ventanilla y paneles (otro módulo del mismo Worker): `/api/ventanilla/*`, `/api/admin/contenidos`, `/api/admin/expedientes`, `/api/admin/ministerios`, `/api/admin/usuarios`, `/api/admin/accesos`, `/api/admin/lecturas`.
 
 ## Configuración del Worker
 
-Variables (`wrangler.toml`): `SITIO_URL`, `CORREO_REMITENTE`, `ADMIN_CORREOS`, `WHATSAPP_WORKER_URL`, `CORREO_PROVEEDOR` (`cloudflare`, `resend` o `consola`), `PAYPAL_MODO` (`sandbox` o `live`).
+Variables (`wrangler.toml`): `SITIO_URL`, `CORREO_REMITENTE`, `ADMIN_CORREOS`, `WHATSAPP_WORKER_URL`, `CORREO_PROVEEDOR` (`cloudflare`, `resend` o `consola`), `PAYPAL_MODO` (`sandbox` o `live`), `ASISTENTE_MODELO`, `PAGES_DEPLOY_HOOK` (opcional).
 
 Secretos (`wrangler secret put`), los pone Pneuma con sus propias cuentas: `LLAVE_MAESTRA` (32+ bytes aleatorios, firma huellas y deriva claves de libros), `INTERNAL_TOKEN`, `RECURRENTE_PUBLIC_KEY`, `RECURRENTE_SECRET_KEY`, `RECURRENTE_WEBHOOK_SECRET`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, `PAYPAL_WEBHOOK_ID`, `ANTHROPIC_API_KEY`, `RESEND_API_KEY` (si se usa Resend).
 

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type { App } from '../env'
+import type { App, Env } from '../env'
 import { AJUSTES_NUMERICOS, todosLosAjustes } from '../lib/ajustes'
 import { tokenAleatorio } from '../lib/cripto'
 import { libroPorId, type FilaLibro } from '../lib/libros'
@@ -42,10 +42,11 @@ const CAMPOS_LIBRO: Record<string, (v: unknown) => [string, unknown]> = {
   orden: (v) => ['orden', entero(v, -100000, 100000)],
 }
 
-function libroAdmin(l: FilaLibro) {
+function libroAdmin(env: Env, l: FilaLibro) {
   const { precio_impreso_centavos, precio_compra_centavos, precio_alquiler_centavos, ...resto } = l
   return {
     ...resto,
+    portada_url: l.portada_clave ? `${env.SITIO_URL}/api/portadas/${l.id}` : null,
     impreso: !!l.impreso,
     digital_activo: !!l.digital_activo,
     en_suscripcion: !!l.en_suscripcion,
@@ -73,7 +74,7 @@ function camposDe(b: Record<string, unknown>) {
 
 admin.get('/libros', async (c) => {
   const { results } = await c.env.DB.prepare('SELECT * FROM libros ORDER BY orden, titulo').all<FilaLibro>()
-  return c.json(results.map(libroAdmin))
+  return c.json(results.map((l) => libroAdmin(c.env, l)))
 })
 
 admin.post('/libros', async (c) => {
@@ -88,14 +89,14 @@ admin.post('/libros', async (c) => {
   )
     .bind(id, slug, ...vals)
     .run()
-  return c.json(libroAdmin((await libroPorId(c.env, id))!), 201)
+  return c.json(libroAdmin(c.env, (await libroPorId(c.env, id))!), 201)
 })
 
 admin.get('/libros/:id', async (c) => {
   const l = await libroPorId(c.env, c.req.param('id'))
   if (!l) throw falla(404, 'no_existe', 'Ese libro no existe.')
   const m = await c.env.ARCHIVOS.get(claveManifiesto(l.id))
-  return c.json({ ...libroAdmin(l), manifiesto: m ? await m.json() : null })
+  return c.json({ ...libroAdmin(c.env, l), manifiesto: m ? await m.json() : null })
 })
 
 admin.patch('/libros/:id', async (c) => {
@@ -112,7 +113,7 @@ admin.patch('/libros/:id', async (c) => {
     .bind(...vals, ahora(), c.req.param('id'))
     .run()
   if (!r.meta.changes) throw falla(404, 'no_existe', 'Ese libro no existe.')
-  return c.json(libroAdmin((await libroPorId(c.env, c.req.param('id')))!))
+  return c.json(libroAdmin(c.env, (await libroPorId(c.env, c.req.param('id')))!))
 })
 
 admin.delete('/libros/:id', requiereRol('admin'), async (c) => {

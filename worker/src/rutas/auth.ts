@@ -41,7 +41,9 @@ auth.post('/auth/enlace', async (c) => {
     await c.env.DB.prepare('UPDATE usuarios SET nombre = COALESCE(nombre, ?) WHERE correo = ?').bind(nombre, correo).run()
   }
 
-  const url = `${c.env.SITIO_URL}/entrar?token=${encodeURIComponent(token)}`
+  // El panel editorial verifica el enlace por su cuenta; el resto pasa por la página /entrar del sitio.
+  const pagina = destino?.startsWith('/panel') ? '/panel' : '/entrar'
+  const url = `${c.env.SITIO_URL}${pagina}?token=${encodeURIComponent(token)}`
   await enviarCorreo(c.env, {
     para: correo,
     asunto: 'Tu enlace para entrar a Publicaciones Pneuma',
