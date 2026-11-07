@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fuente, modoDemo } from '../lib/fuente-activa'
+import { fuente, modoDemo, permiteSinConexion, red } from '../lib/fuente-activa'
+import { idDispositivo } from '../lib/dispositivo'
+import BotonDescarga from '../sinconexion/BotonDescarga'
+import { renovar } from '../sinconexion/sin-conexion'
 import type { Obra } from '../lib/tipos'
 import Monograma from '../marca/Monograma'
 
@@ -13,10 +16,17 @@ const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-GT', { day: 
 export default function Biblioteca({ correo, onSalir }: { correo: string; onSalir: () => void }) {
   const [libros, setLibros] = useState<(Obra & { progreso: number })[] | null>(null)
   const [error, setError] = useState('')
+  const [aviso, setAviso] = useState('')
 
   useEffect(() => {
     fuente.biblioteca().then(setLibros).catch(() => setError('No se pudo cargar tu biblioteca. Revisa tu conexión.'))
+    if (permiteSinConexion() && navigator.onLine) renovar(red, idDispositivo())
   }, [])
+  useEffect(() => {
+    if (!aviso) return
+    const t = setTimeout(() => setAviso(''), 2600)
+    return () => clearTimeout(t)
+  }, [aviso])
 
   return (
     <div className="biblioteca">
@@ -46,7 +56,8 @@ export default function Biblioteca({ correo, onSalir }: { correo: string; onSali
         {libros?.map((l) => {
           const pct = Math.round(l.progreso * 100)
           return (
-            <Link key={l.id} to={`/leer/${l.id}`} className="libro">
+            <div key={l.id} className="celda">
+            <Link to={`/leer/${l.id}`} className="libro">
               <Portada libro={l} />
               <span className="titulo">{l.titulo}</span>
               <span className="autor">{l.autor}</span>
@@ -58,9 +69,13 @@ export default function Biblioteca({ correo, onSalir }: { correo: string; onSali
                 </span>
               </span>
             </Link>
+            {permiteSinConexion() && <BotonDescarga obra={l} avisar={setAviso} />}
+            </div>
           )
         })}
       </div>
+
+      {aviso && <div className="aviso" role="status">{aviso}</div>}
 
       <footer className="firma">
         Creado por Tecnoiagt · <a href="https://www.tecnoiagt.com" target="_blank" rel="noreferrer">www.tecnoiagt.com</a>

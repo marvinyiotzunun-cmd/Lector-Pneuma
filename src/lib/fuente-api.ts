@@ -1,4 +1,5 @@
 import { ErrorApi, type FuenteLector, type InfoObra } from './fuente'
+import type { FuenteSinConexion, RespuestaLicencia } from '../sinconexion/sin-conexion'
 import { idDispositivo, esApp, nombreDispositivo, plataforma } from './dispositivo'
 import { leerLocal, guardarLocal } from './local'
 import { ubicacionSubrayado, leerUbicacionSubrayado } from './fuente'
@@ -134,4 +135,16 @@ function aObra(l: LibroApi, acceso: TipoAcceso, vence_en: string | null): Obra {
     id: l.id, titulo: l.titulo, autor: l.autor, formato: l.digital?.formato ?? 'pdf', portada_url: l.portada_url,
     color: null, acceso, vence_en, paginas_muestra: l.digital?.paginas_muestra ?? null,
   }
+}
+
+export const sinConexionApi: FuenteSinConexion = {
+  licencia: (id, idDispositivo, clavePublica) =>
+    api<RespuestaLicencia>(`/obras/${id}/licencia-offline`, { method: 'POST', json: { id_dispositivo: idDispositivo, clave_publica: clavePublica } }),
+  async paquete(id, n) {
+    const b = await api<Blob>(`/obras/${id}/paquete/${n}`, { cache: 'no-store' })
+    return b.arrayBuffer()
+  },
+  async liberar(id) {
+    await api(`/obras/${id}/licencia-offline`, { method: 'DELETE' })
+  },
 }

@@ -1,4 +1,5 @@
 import { ErrorApi, type FuenteLector, type InfoObra } from './fuente'
+import type { FuenteSinConexion } from '../sinconexion/sin-conexion'
 import { leerLocal, guardarLocal } from './local'
 import { idDispositivo, nombreDispositivo, plataforma } from './dispositivo'
 import { prepararObra, type ObraPreparada } from '../preparar/preparar-obra'
@@ -109,5 +110,54 @@ export const fuenteDemo: FuenteLector = {
   },
   async quitarSubrayado(id, sid) {
     guardarLocal(clave('subrayados', id), leerLocal<{ id: string }[]>(clave('subrayados', id), []).filter((s) => s.id !== sid))
+  },
+}
+
+// Lo que haría el Worker para la lectura sin conexión, simulado en el navegador.
+const DIAS_LICENCIA = 14
+const MAX_OBRAS_SIN_CONEXION = 5
+
+async function claveObra(id: string): Promise<{ cruda: Uint8Array; clave: CryptoKey }> {
+  let b = leerLocal<string | null>(clave('aes', id), null)
+  if (!b) {
+    b = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+    guardarLocal(clave('aes', id), b)
+  }
+  const cruda = Uint8Array.from(atob(b), (c) => c.charCodeAt(0))
+  return { cruda, clave: await crypto.subtle.importKey('raw', cruda, 'AES-GCM', false, ['encrypt']) }
+}
+
+export const sinConexionDemo: FuenteSinConexion = {
+  async licencia(id, _idDispositivo, clavePublica) {
+    const o = OBRAS.find((x) => x.id === id)
+    if (!o || o.acceso === 'muestra') throw new ErrorApi(403, 'sin_acceso', 'Las muestras no se pueden descargar.')
+    const usadas = leerLocal<string[]>('demo:sin-conexion', [])
+    if (!usadas.includes(id)) {
+      if (usadas.length >= MAX_OBRAS_SIN_CONEXION) throw new ErrorApi(409, 'limite_sin_conexion', `Puedes tener hasta ${MAX_OBRAS_SIN_CONEXION} libros descargados en este dispositivo.`)
+      guardarLocal('demo:sin-conexion', [...usadas, id])
+    }
+    const pub = await crypto.subtle.importKey('spki', Uint8Array.from(atob(clavePublica), (c) => c.charCodeAt(0)), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt'])
+    const { cruda } = await claveObra(id)
+    const envuelta = await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, pub, cruda)
+    const { manifiesto } = await preparada(id)
+    return {
+      licencia_id: `lic-${id}`,
+      clave_envuelta: btoa(String.fromCharCode(...new Uint8Array(envuelta))),
+      vence_en: new Date(Date.now() + DIAS_LICENCIA * 864e5).toISOString(),
+      total_paginas: manifiesto.total_paginas,
+    }
+  },
+  async paquete(id, n) {
+    const p = await fuenteDemo.pagina(id, n)
+    const claro = p.tipo === 'html' ? new TextEncoder().encode(p.html) : new Uint8Array(await p.imagen.arrayBuffer())
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const cifrado = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, (await claveObra(id)).clave, claro))
+    const salida = new Uint8Array(12 + cifrado.length)
+    salida.set(iv)
+    salida.set(cifrado, 12)
+    return salida.buffer
+  },
+  async liberar(id) {
+    guardarLocal('demo:sin-conexion', leerLocal<string[]>('demo:sin-conexion', []).filter((x) => x !== id))
   },
 }
