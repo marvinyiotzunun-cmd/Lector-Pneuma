@@ -1,0 +1,5 @@
+# Copia este archivo como .dev.vars para pruebas locales. En producción usa `wrangler secret put`.
+META_TOKEN=
+META_APP_SECRET=
+META_VERIFY_TOKEN=elige-una-frase-larga
+INTERNAL_TOKEN=elige-otra-frase-larga

@@ -1,0 +1,25 @@
+name = "pneuma-whatsapp"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+
+# Base de datos propia del bot: conversaciones, idempotencia y pedidos de prueba.
+[[d1_databases]]
+binding = "DB"
+database_name = "pneuma-whatsapp"
+database_id = "00000000-0000-0000-0000-000000000000" # reemplazar tras `wrangler d1 create pneuma-whatsapp`
+migrations_dir = "migrations"
+
+[vars]
+# "sandbox": no llama a Meta ni al backend; guarda los mensajes de salida y usa un catálogo de prueba.
+# "produccion": usa Meta Cloud API y el backend real.
+MODO = "sandbox"
+META_API_VERSION = "v23.0"
+META_PHONE_NUMBER_ID = ""
+META_CATALOG_ID = ""            # opcional: si se llena, el catálogo se envía como mensaje de productos de Meta
+BACKEND_URL = ""                # p. ej. https://api.pneuma.gt
+SITIO_URL = "https://pneuma.gt"
+NUMERO_ATENCION = "50200000000" # número de WhatsApp de Pneuma, sin + ni espacios
+PLANTILLA_AVISO = "pedido_actualizado"
+PLANTILLA_IDIOMA = "es"
+
+# Secretos (wrangler secret put ...): META_TOKEN, META_APP_SECRET, META_VERIFY_TOKEN, INTERNAL_TOKEN
