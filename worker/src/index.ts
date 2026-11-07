@@ -9,6 +9,7 @@ import { auth } from './rutas/auth'
 import { catalogo } from './rutas/catalogo'
 import { lector } from './rutas/lector'
 import { interno, pedidos } from './rutas/pedidos'
+import { montarVentanilla } from './ventanilla'
 
 export { enviarCorreo } from './lib/correo'
 export { requiereRol, requiereSesion, usuarioDeSesion } from './lib/sesion'
@@ -39,7 +40,8 @@ app.route('/', pedidos)
 app.route('/', asistente)
 app.route('/interno', interno)
 app.route('/admin', admin)
-// Ventanilla y paneles (otro módulo): app.route('/ventanilla', ventanilla); app.route('/admin', adminVentanilla)
+// Ventanilla editorial y paneles: /ventanilla, /contenidos, /formatos, /proceso/etapas y más rutas de /admin.
+montarVentanilla(app)
 
 app.notFound((c) => c.json({ error: { codigo: 'no_existe', mensaje: 'Ruta no encontrada.' } }, 404))
 app.onError((e, c) => {

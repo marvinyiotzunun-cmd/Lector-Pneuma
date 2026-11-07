@@ -9,7 +9,6 @@ body { font-size: 14.5px; }
 .btn.secundario.peligro, .p-enlace.peligro { color: #B3261E; }
 .p-enlace { border: 0; background: none; color: var(--marca); text-decoration: underline; padding: 4px 2px; font-size: 13px; }
 .entrar .p-nota { font-size: 13px; }
-.p-demo { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--linea); font-size: 13px; color: var(--tenue); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
 
 /* Marco: barra lateral navy + contenido */
 .p-marco { display: grid; grid-template-columns: 248px 1fr; min-height: 100%; }

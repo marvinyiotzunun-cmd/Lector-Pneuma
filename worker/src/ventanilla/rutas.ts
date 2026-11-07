@@ -4,12 +4,11 @@ import type { Env, Variables } from '../env'
 import { requiereSesion } from '../lib/sesion'
 import {
   DOCUMENTOS_SOLICITUD, ErrorVentanilla, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarDocumentos, avisarSolicitudNueva, descargarDocumento, despues,
-  entero, guardarDocumento, nuevoId, responderError, siguienteCodigo, texto, validarArchivo, type Ctx, type ExpedienteFila, type TipoDocumento,
+  entero, guardarDocumento, nuevoId, siguienteCodigo, texto, validarArchivo, type Ctx, type ExpedienteFila, type TipoDocumento,
 } from './servicio'
 
 export const ventanilla = new Hono<{ Bindings: Env; Variables: Variables }>()
 
-ventanilla.onError(responderError)
 
 ventanilla.use('*', requiereSesion)
 
@@ -94,7 +93,7 @@ ventanilla.post('/expedientes', async (c) => {
 
   // Se valida todo antes de tomar el correlativo, para no dejar huecos en la numeración.
   for (const a of archivos) validarArchivo(a.archivo, a.tipo)
-  const id = nuevoId()
+  const id = nuevoId('exp')
   const codigo = await siguienteCodigo(c.env.DB)
   // Primero los archivos; si alguno falla, se borran los que ya subieron y no queda expediente a medias.
   const subidos: { id: string; sentencia: D1PreparedStatement }[] = []
@@ -106,7 +105,7 @@ ventanilla.post('/expedientes', async (c) => {
     throw e
   }
 
-  const historialId = nuevoId()
+  const historialId = nuevoId('his')
   await c.env.DB.batch([
     c.env.DB.prepare(`INSERT INTO expedientes (id, codigo, ministerio_id, solicitante_id, titulo, subtitulo, autores, genero,
         publico, sinopsis, semblanza_autor, paginas_aprox, modalidad, tiraje_estimado) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)`)
@@ -158,7 +157,7 @@ ventanilla.post('/expedientes/:codigo/documentos', async (c) => {
   await c.env.DB.batch([
     ...subidos.map((s) => s.sentencia),
     c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, nota, autor_id) VALUES (?1, ?2, 'documento', ?3, ?4)`)
-      .bind(nuevoId(), exp.id, nota ?? `Se agregó: ${archivos.map((a) => a.name).join(', ')}`, u.id),
+      .bind(nuevoId('his'), exp.id, nota ?? `Se agregó: ${archivos.map((a) => a.name).join(', ')}`, u.id),
     c.env.DB.prepare(`UPDATE expedientes SET actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?`).bind(exp.id),
   ])
   despues(c, avisarDocumentos(c.env, exp, archivos.map((a) => a.name), nota))

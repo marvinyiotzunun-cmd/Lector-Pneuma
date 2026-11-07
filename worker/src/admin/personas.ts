@@ -4,14 +4,13 @@ import type { Env, Variables } from '../env'
 import { requiereRol } from '../lib/sesion'
 import { enviarCorreo } from '../lib/correo'
 import { correoInvitacionMinisterio } from '../ventanilla/correos'
-import { ErrorVentanilla, despues, entero, nuevoId, responderError, texto, urlPanel } from '../ventanilla/servicio'
+import { ErrorVentanilla, despues, entero, nuevoId, texto, urlPanel } from '../ventanilla/servicio'
 
 type App = { Bindings: Env; Variables: Variables }
 type Rol = 'lector' | 'ministerio' | 'editor' | 'admin'
 const ROLES: Rol[] = ['lector', 'ministerio', 'editor', 'admin']
 
 export const adminPersonas = new Hono<App>()
-adminPersonas.onError(responderError)
 adminPersonas.use('*', requiereRol('editor', 'admin'))
 
 const correoValido = (v: unknown): string | null => {
@@ -31,7 +30,7 @@ async function cuentaPorCorreo(db: D1Database, correo: string, nombre: string | 
     if (!existe.nombre && nombre) await db.prepare('UPDATE usuarios SET nombre = ? WHERE id = ?').bind(nombre, existe.id).run()
     return { ...existe, nueva: false }
   }
-  const id = nuevoId()
+  const id = nuevoId('usr')
   await db.prepare('INSERT INTO usuarios (id, correo, nombre, rol) VALUES (?, ?, ?, ?)').bind(id, correo, nombre, rol).run()
   return { id, correo, nombre, rol, nueva: true }
 }
@@ -50,7 +49,7 @@ adminPersonas.post('/ministerios', async (c) => {
   const b = await c.req.json<Record<string, string>>()
   const nombre = texto(b.nombre, 160)
   if (!nombre) throw new ErrorVentanilla(400, 'El ministerio necesita un nombre.')
-  const id = nuevoId()
+  const id = nuevoId('min')
   try {
     await c.env.DB.prepare(`INSERT INTO ministerios (id, nombre, siglas, contacto_nombre, contacto_correo, contacto_telefono)
       VALUES (?, ?, ?, ?, ?, ?)`)
@@ -188,7 +187,7 @@ adminPersonas.post('/accesos', async (c) => {
         AND (vence_en IS NULL OR vence_en > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`).bind(u.id, b.libro_id).first()
     if (vigente) continue
     await c.env.DB.prepare(`INSERT INTO accesos (id, usuario_id, libro_id, tipo, vence_en) VALUES (?, ?, ?, 'cortesia', ?)`)
-      .bind(nuevoId(), u.id, b.libro_id, vence).run()
+      .bind(nuevoId('acc'), u.id, b.libro_id, vence).run()
     otorgados.push(correo)
   }
   return c.json({ ok: true, otorgados, ya_tenian: correos.filter((x) => !otorgados.includes(x)) }, 201)

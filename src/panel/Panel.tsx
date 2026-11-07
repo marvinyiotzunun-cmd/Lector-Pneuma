@@ -58,7 +58,7 @@ export default function Panel() {
   }, [])
 
   if (estado === 'cargando') return <div className="p-cargando">Cargando…</div>
-  if (estado === 'fuera') return <Entrar error={error} alEntrar={recargar} />
+  if (estado === 'fuera') return <Entrar error={error} />
 
   const sesion: Sesion = { ...estado, recargar, salir }
   const editorial = esEditorial(estado.usuario)

@@ -4,12 +4,11 @@
 import { Hono } from 'hono'
 import type { Env, Variables } from '../env'
 import { requiereRol } from '../lib/sesion'
-import { ErrorVentanilla, MB, descargarDocumento, entero, nombreSeguro, nuevoId, responderError, texto } from '../ventanilla/servicio'
+import { ErrorVentanilla, MB, descargarDocumento, entero, nombreSeguro, nuevoId, texto } from '../ventanilla/servicio'
 
 type App = { Bindings: Env; Variables: Variables }
 
 export const contenidosPublicos = new Hono<App>()
-contenidosPublicos.onError(responderError)
 
 contenidosPublicos.get('/contenidos', async (c) => {
   const { results } = await c.env.DB
@@ -56,7 +55,6 @@ contenidosPublicos.get('/formatos/:id/archivo', async (c) => {
 
 // ---------- Administración ----------
 export const adminContenidos = new Hono<App>()
-adminContenidos.onError(responderError)
 adminContenidos.use('*', requiereRol('editor', 'admin'))
 
 adminContenidos.get('/contenidos', async (c) => {
@@ -97,7 +95,7 @@ adminContenidos.post('/formatos', async (c) => {
   const archivo = f.get('archivo')
   if (!nombre || !(archivo instanceof File) || !archivo.size) throw new ErrorVentanilla(400, 'Falta el nombre o el archivo.')
   if (archivo.size > 20 * MB) throw new ErrorVentanilla(413, 'El formato pesa más de 20 MB.')
-  const id = nuevoId()
+  const id = nuevoId('fmt')
   const ruta = `formatos/${id}-${nombreSeguro(archivo.name)}`
   await c.env.ARCHIVOS.put(ruta, archivo.stream(), { httpMetadata: { contentType: archivo.type || 'application/octet-stream' } })
   await c.env.DB.prepare(`INSERT INTO formatos_oficiales (id, nombre, descripcion, ruta, nombre_archivo, tipo_mime, tamano, orden)

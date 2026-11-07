@@ -2,6 +2,7 @@
 import type { Context } from 'hono'
 import type { Env, Variables } from '../env'
 import { enviarCorreo } from '../lib/correo'
+import { ErrorApi, nuevoId as idConPrefijo } from '../lib/util'
 import { correoAvisoEtapa, correoDocumentoNuevo, correoNuevaSolicitud } from './correos'
 
 export type Ctx = Context<{ Bindings: Env; Variables: Variables }>
@@ -48,18 +49,14 @@ const EXTENSIONES: Record<string, string[]> = {
 const extensionesDe = (tipo: TipoDocumento) => EXTENSIONES[tipo] ?? ['pdf', 'doc', 'docx', 'odt', 'jpg', 'jpeg', 'png', 'webp']
 
 export const ahora = () => new Date().toISOString()
-export const nuevoId = () => crypto.randomUUID()
+/** Ids con prefijo, como el resto del backend (exp_…, doc_…). */
+export const nuevoId = (prefijo = 'vnt') => idConPrefijo(prefijo)
 
-/** Error con el formato del contrato: {"error": {"codigo", "mensaje"}}. */
-export class ErrorVentanilla extends Error {
-  constructor(public estado: 400 | 403 | 404 | 409 | 413, mensaje: string, public codigo: string = CODIGOS[estado]) { super(mensaje) }
+/** Error de la ventanilla: es un ErrorApi del backend, así que el onError general lo responde como {error: {codigo, mensaje}}. */
+export class ErrorVentanilla extends ErrorApi {
+  constructor(estado: 400 | 403 | 404 | 409 | 413, mensaje: string, codigo: string = CODIGOS[estado]) { super(estado, codigo, mensaje) }
 }
 const CODIGOS = { 400: 'datos_invalidos', 403: 'sin_permiso', 404: 'no_encontrado', 409: 'conflicto', 413: 'archivo_grande' } as const
-
-export function responderError(err: Error, c: Ctx) {
-  if (err instanceof ErrorVentanilla) return c.json({ error: { codigo: err.codigo, mensaje: err.message } }, err.estado)
-  throw err
-}
 
 /** Siguiente código del año: PNE-2026-001. El correlativo se incrementa de forma atómica en D1. */
 export async function siguienteCodigo(db: D1Database, fecha = new Date()): Promise<string> {
@@ -92,7 +89,7 @@ export async function guardarDocumento(
   env: Env, expedienteId: string, archivo: File, tipo: TipoDocumento, usuarioId: string,
 ): Promise<{ id: string; sentencia: D1PreparedStatement }> {
   validarArchivo(archivo, tipo)
-  const id = nuevoId()
+  const id = nuevoId('doc')
   const nombre = nombreSeguro(archivo.name)
   const ruta = `expedientes/${expedienteId}/${id}-${nombre}`
   await env.ARCHIVOS.put(ruta, archivo.stream(), {
@@ -169,7 +166,7 @@ async function enviarATodos(env: Env, para: string[], asunto: string, html: stri
 export async function avisarSolicitudNueva(env: Env, expediente: ExpedienteFila, historialId: string) {
   const { total } = await infoEtapas(env.DB)
   const alMinisterio = correoAvisoEtapa({
-    expediente, total, etapa: 1, etapaNombre: expediente.etapa_nombre, estado: expediente.estado,
+    tipo: 'creado', expediente, total, etapa: 1, etapaNombre: expediente.etapa_nombre, estado: expediente.estado,
     nota: 'Recibimos su solicitud. La Dirección Editorial la revisará y le avisaremos de cada avance por este medio.',
     url: urlPanel(env, `/ventanilla/${expediente.codigo}`),
   })
@@ -192,8 +189,9 @@ export async function avisarCambio(env: Env, expedienteId: string, historialId: 
   const exp = await env.DB.prepare(`${SELECT_EXPEDIENTE} WHERE e.id = ?`).bind(expedienteId).first<ExpedienteFila>()
   if (!exp) return
   const { total } = await infoEtapas(env.DB)
+  const h = await env.DB.prepare('SELECT tipo FROM expediente_historial WHERE id = ?').bind(historialId).first<{ tipo: 'etapa' | 'estado' | 'nota' }>()
   const correo = correoAvisoEtapa({
-    expediente: exp, total, etapa: exp.etapa, etapaNombre: exp.etapa_nombre, estado: exp.estado, nota,
+    tipo: h?.tipo ?? 'etapa', expediente: exp, total, etapa: exp.etapa, etapaNombre: exp.etapa_nombre, estado: exp.estado, nota,
     url: urlPanel(env, `/ventanilla/${exp.codigo}`),
   })
   const ok = await enviarATodos(env, await correosDelMinisterio(env.DB, exp), correo.asunto, correo.html, correo.texto)

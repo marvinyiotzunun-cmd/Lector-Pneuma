@@ -4,12 +4,11 @@ import type { Env, Variables } from '../env'
 import { requiereRol } from '../lib/sesion'
 import {
   DICTAMENES, ESTADOS, ErrorVentanilla, REVISIONES, SELECT_EXPEDIENTE, TIPOS_DOCUMENTO, avisarCambio, descargarDocumento, despues,
-  NOMBRE_DICTAMEN, entero, infoEtapas, guardarDocumento, nuevoId, responderError, texto,
+  NOMBRE_DICTAMEN, entero, infoEtapas, guardarDocumento, nuevoId, texto,
   type EstadoExpediente, type ExpedienteFila, type TipoDocumento,
 } from '../ventanilla/servicio'
 
 export const adminExpedientes = new Hono<{ Bindings: Env; Variables: Variables }>()
-adminExpedientes.onError(responderError)
 adminExpedientes.use('*', requiereRol('editor', 'admin'))
 
 const AHORA_SQL = `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
@@ -106,7 +105,7 @@ adminExpedientes.post('/expedientes/:id/etapa', async (c) => {
   if (exp.estado === 'rechazado') throw new ErrorVentanilla(409, 'El expediente fue rechazado; reanúdelo antes de moverlo.')
   const estado: EstadoExpediente = etapa >= fases.publica ? 'publicado' : 'en_curso'
   const nota = texto(cuerpo.nota, 4000)
-  const hid = nuevoId()
+  const hid = nuevoId('his')
   await c.env.DB.batch([
     c.env.DB.prepare(`UPDATE expedientes SET etapa = ?1, estado = ?2, actualizado_en = ${AHORA_SQL} WHERE id = ?3`)
       .bind(etapa, estado, exp.id),
@@ -128,7 +127,7 @@ adminExpedientes.post('/expedientes/:id/estado', async (c) => {
   const nota = texto(cuerpo.nota, 4000)
   if ((cuerpo.estado === 'requiere_cambios' || cuerpo.estado === 'rechazado') && !nota)
     throw new ErrorVentanilla(400, 'Explique al ministerio qué debe cambiar o por qué no se aprobó.')
-  const hid = nuevoId()
+  const hid = nuevoId('his')
   await c.env.DB.batch([
     c.env.DB.prepare(`UPDATE expedientes SET estado = ?1, actualizado_en = ${AHORA_SQL} WHERE id = ?2`).bind(cuerpo.estado, exp.id),
     c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, etapa_nueva, estado_nuevo, nota, autor_id)
@@ -146,7 +145,7 @@ adminExpedientes.post('/expedientes/:id/notas', async (c) => {
   const nota = texto(cuerpo.nota, 4000)
   if (!nota) throw new ErrorVentanilla(400, 'Escriba la nota.')
   const visible = cuerpo.visible_ministerio ? 1 : 0
-  const hid = nuevoId()
+  const hid = nuevoId('his')
   await c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, nota, visible_ministerio, autor_id)
     VALUES (?1, ?2, 'nota', ?3, ?4, ?5)`).bind(hid, exp.id, nota, visible, u.id).run()
   if (visible) despues(c, avisarCambio(c.env, exp.id, hid, nota))
@@ -179,7 +178,7 @@ adminExpedientes.patch('/expedientes/:id', async (c) => {
   // El resultado del dictamen queda en el historial y se avisa al ministerio.
   const dictamen = cuerpo.dictamen as (typeof DICTAMENES)[number] | undefined
   if (dictamen && dictamen !== exp.dictamen) {
-    const hid = nuevoId()
+    const hid = nuevoId('his')
     const nota = `Dictamen de la Junta Editorial: ${NOMBRE_DICTAMEN[dictamen]}.${typeof cuerpo.nota === 'string' && cuerpo.nota.trim() ? `\n\n${cuerpo.nota.trim().slice(0, 4000)}` : ''}`
     await c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, nota, autor_id) VALUES (?1, ?2, 'nota', ?3, ?4)`)
       .bind(hid, exp.id, nota, c.get('usuario')!.id).run()
@@ -204,7 +203,7 @@ adminExpedientes.post('/expedientes/:id/documentos', async (c) => {
     ...subidos.map((s) => s.sentencia),
     c.env.DB.prepare(`INSERT INTO expediente_historial (id, expediente_id, tipo, nota, visible_ministerio, autor_id)
       VALUES (?1, ?2, 'documento', ?3, ?4, ?5)`)
-      .bind(nuevoId(), exp.id, texto(f.get('nota'), 2000) ?? `Se adjuntó: ${archivos.map((a) => a.name).join(', ')}`, visible, u.id),
+      .bind(nuevoId('his'), exp.id, texto(f.get('nota'), 2000) ?? `Se adjuntó: ${archivos.map((a) => a.name).join(', ')}`, visible, u.id),
     c.env.DB.prepare(`UPDATE expedientes SET actualizado_en = ${AHORA_SQL} WHERE id = ?`).bind(exp.id),
   ])
   return c.json({ ok: true, documentos: subidos.map((s) => s.id) }, 201)

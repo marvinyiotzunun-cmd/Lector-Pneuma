@@ -48,13 +48,16 @@ interface DatosExp { codigo: string; titulo: string; ministerio: string; autores
 
 export function correoAvisoEtapa(d: {
   expediente: DatosExp; total: number; etapa: number; etapaNombre: string; estado: EstadoExpediente; nota: string | null; url: string
+  tipo?: 'creado' | 'etapa' | 'estado' | 'nota'
 }) {
   const e = d.expediente
-  const esNueva = d.etapa === 1 && d.estado === 'en_curso'
-  const titulo = esNueva
-    ? 'Recibimos su solicitud'
-    : d.estado === 'en_curso' ? `Su obra pasó a: ${d.etapaNombre}` : `Su expediente está: ${NOMBRE_ESTADO[d.estado]}`
-  const asunto = `${e.codigo} · ${esNueva ? 'Solicitud recibida' : d.estado === 'en_curso' ? d.etapaNombre : NOMBRE_ESTADO[d.estado]} · «${e.titulo}»`
+  const tipo = d.tipo ?? (d.etapa === 1 && d.estado === 'en_curso' ? 'creado' : 'etapa')
+  const [titulo, resumen] =
+    tipo === 'creado' ? ['Recibimos su solicitud', 'Solicitud recibida']
+    : tipo === 'etapa' ? [`Su obra pasó a: ${d.etapaNombre}`, d.etapaNombre]
+    : tipo === 'estado' ? [`Su expediente está: ${NOMBRE_ESTADO[d.estado]}`, NOMBRE_ESTADO[d.estado]]
+    : ['Mensaje de la Dirección Editorial', 'Mensaje de la Dirección Editorial']
+  const asunto = `${e.codigo} · ${resumen} · «${e.titulo}»`
   const cuerpo = `
   <p style="margin:0 0 4px;font-size:15px"><strong>«${esc(e.titulo)}»</strong></p>
   <p style="margin:0;color:#716D64;font-size:14px">${esc(e.autores)} · ${esc(e.ministerio)}</p>

@@ -38,3 +38,20 @@ Para conectar Supabase, copia `.env.example` a `.env` y completa `VITE_SUPABASE_
 
 ---
 Creado por Tecnoiagt · [www.tecnoiagt.com](https://www.tecnoiagt.com)
+
+## Ventanilla editorial y paneles (`panel.html`)
+
+Segundo punto de entrada del mismo proyecto de Vite. En producción vive en `/panel` y usa la API del Worker (`worker/`).
+
+- **Ministerios** (rol `ministerio`): presentan obras con el manuscrito y los documentos del Manual General Administrativo, reciben un código `PNE-AAAA-NNN` y siguen cada etapa. Reciben un correo en cada cambio.
+- **Dirección Editorial** (roles `editor` y `admin`): tablero por etapa con atrasos, lista con filtros, expediente con etapa, estado, dictamen, modalidad de revisión (A a F), notas internas o visibles y documentos. Las etapas (8 por defecto) se editan en el panel.
+- **Administración**: libros del catálogo y carga al lector protegido (la conversión corre en el navegador con `src/preparar/`), contenidos y formatos del sitio, ministerios y sus cuentas, usuarios y roles, accesos de cortesía y quién lee qué.
+
+API: `worker/src/ventanilla/` y `worker/src/admin/`, montadas con `montarVentanilla(app)`; esquema en `worker/migrations/0100_ventanilla.sql`; pruebas en `worker/test/ventanilla.test.ts`.
+
+```bash
+cd worker && npm install && npm run migrar:local && npm run dev   # API en :8787
+npm run dev                                                       # abre http://localhost:5173/panel.html
+```
+
+Para entrar en local, pide el enlace con tu correo: con `CORREO_PROVEEDOR = "consola"` el enlace aparece en la consola del Worker. Los correos de `ADMIN_CORREOS` entran como administradores.
