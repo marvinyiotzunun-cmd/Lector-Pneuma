@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core'
+import { App as CapApp } from '@capacitor/app'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { HashRouter, Route, Routes, useParams } from 'react-router-dom'
 import { fuente } from './lib/fuente-activa'
@@ -53,8 +55,9 @@ export default function App() {
   useEffect(() => {
     arrancar(tokenDeUrl(location.href))
     // En la app, el enlace del correo abre la app (App Links) y llega por este evento.
-    const cap = (window as { Capacitor?: { Plugins?: { App?: { addListener: (e: string, f: (d: { url: string }) => void) => void } } } }).Capacitor
-    cap?.Plugins?.App?.addListener('appUrlOpen', ({ url }) => { const t = tokenDeUrl(url); if (t) arrancar(t) })
+    if (!Capacitor.isNativePlatform()) return
+    const escucha = CapApp.addListener('appUrlOpen', ({ url }) => { const t = tokenDeUrl(url); if (t) arrancar(t) })
+    return () => { escucha.then((e) => e.remove()) }
   }, [arrancar])
 
   if (estado.tipo === 'cargando') return null

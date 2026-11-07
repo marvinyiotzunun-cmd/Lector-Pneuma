@@ -1,0 +1,50 @@
+name: App Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build:app
+      - name: APK de prueba
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pneuma-lector-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+      - name: AAB firmado para Google Play
+        if: ${{ github.event_name != 'pull_request' && env.CLAVE_ANDROID != '' }}
+        working-directory: android
+        env:
+          CLAVE_ANDROID: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$CLAVE_ANDROID" | base64 -d > app/pneuma.keystore
+          ./gradlew bundleRelease --no-daemon
+      - if: ${{ github.event_name != 'pull_request' && env.CLAVE_ANDROID != '' }}
+        env:
+          CLAVE_ANDROID: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pneuma-lector-play
+          path: android/app/build/outputs/bundle/release/*.aab
