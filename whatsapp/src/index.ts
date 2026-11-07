@@ -1,7 +1,7 @@
 import { AlmacenD1 } from './almacen';
 import { crearBackend } from './backend';
 import { Bot } from './flujo';
-import { firmaValida, iguales, leerWebhook, Meta } from './meta';
+import { firmaValida, iguales, leerEcos, leerWebhook, Meta } from './meta';
 import type { Entrante, Env, EventoPedido, TipoEvento } from './tipos';
 
 const json = (data: unknown, status = 200) =>
@@ -48,8 +48,11 @@ export default {
         }
       }
       let mensajes: Entrante[];
+      let ecos: string[];
       try {
-        mensajes = leerWebhook(JSON.parse(cuerpo));
+        const datos = JSON.parse(cuerpo);
+        mensajes = leerWebhook(datos);
+        ecos = leerEcos(datos);
       } catch {
         return new Response('JSON inválido', { status: 400 });
       }
@@ -57,6 +60,7 @@ export default {
       // Meta espera un 200 rápido; el trabajo sigue en segundo plano.
       ctx.waitUntil(
         (async () => {
+          for (const tel of ecos) await bot.atiendePersona(tel).catch((err) => console.error('eco', err));
           for (const m of mensajes) {
             try {
               await meta.leido(m.id);

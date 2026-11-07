@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AlmacenMemoria } from '../src/almacen';
 import { CATALOGO_PRUEBA, type Backend } from '../src/backend';
 import { Bot } from '../src/flujo';
-import { firmaValida, leerWebhook } from '../src/meta';
+import { firmaValida, leerEcos, leerWebhook } from '../src/meta';
 import type { Entrante, NuevoPedido, Saliente } from '../src/tipos';
 
 const TEL = '50255550000';
@@ -135,6 +135,16 @@ describe('flujo de pedido', () => {
     await enviar({ texto: 'quiero hablar con una persona' });
     expect(await enviar({ texto: '¿tienen biblias?' })).toHaveLength(0);
     expect(await enviar({ texto: 'Menú' })).toHaveLength(1);
+  });
+
+  it('si el equipo escribe desde la app, el bot se aparta', async () => {
+    const { enviar, bot } = armar();
+    await enviar({ texto: 'hola' });
+    await bot.atiendePersona(TEL);
+    expect(await enviar({ texto: 'gracias' })).toHaveLength(0);
+    expect(
+      leerEcos({ entry: [{ changes: [{ field: 'smb_message_echoes', value: { message_echoes: [{ from: '502', to: TEL, id: 'e1' }] } }] }] }),
+    ).toEqual([TEL]);
   });
 
   it('ignora reintentos de Meta con el mismo id', async () => {

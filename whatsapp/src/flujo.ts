@@ -310,6 +310,13 @@ export class Bot {
     await this.wa.enviar(s.telefono, texto(`${T.misPedidos}\n\n${lineas.join('\n')}`));
   }
 
+  /** Alguien del equipo escribió desde la app: el bot se aparta para no interrumpir la conversación. */
+  async atiendePersona(telefono: string): Promise<void> {
+    const s = await this.almacen.sesion(telefono);
+    s.humano_hasta = this.ahora() + HUMANO;
+    await this.almacen.guardar(s);
+  }
+
   // ---------- Avisos que manda el backend ----------
 
   async evento(e: EventoPedido): Promise<'enviado' | 'omitido'> {

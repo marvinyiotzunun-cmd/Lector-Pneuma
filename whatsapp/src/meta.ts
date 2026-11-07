@@ -73,6 +73,19 @@ export function leerWebhook(json: any): Entrante[] {
   return salida;
 }
 
+/**
+ * Coexistencia: mensajes que el equipo envió desde la app WhatsApp Business (campo smb_message_echoes).
+ * Devuelve el número del cliente al que se le escribió.
+ */
+export function leerEcos(json: any): string[] {
+  const salida: string[] = [];
+  for (const entrada of json?.entry ?? [])
+    for (const cambio of entrada?.changes ?? [])
+      if (cambio?.field === 'smb_message_echoes')
+        for (const e of cambio.value?.message_echoes ?? []) if (e?.to) salida.push(String(e.to));
+  return salida;
+}
+
 /** Cliente de envío. En sandbox guarda los mensajes en D1 en lugar de enviarlos. */
 export class Meta {
   constructor(private env: Env) {}
