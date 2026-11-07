@@ -1,0 +1,54 @@
+---
+import Base from '../layouts/Base.astro'
+import Icono from '../components/Icono.astro'
+import IconoWhatsApp from '../components/IconoWhatsApp.astro'
+import QR from '../components/QR.astro'
+import { contenido, markdown } from '../lib/datos'
+import { SITIO, enlaceWhatsApp } from '../datos/sitio'
+const texto = await contenido('contacto')
+const mapa = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(SITIO.direccion)}`
+---
+<Base titulo="Contacto" descripcion="Escribe a Publicaciones Pneuma por WhatsApp o correo. Oficina en zona 11, Ciudad de Guatemala.">
+  <section class="seccion">
+    <div class="envoltura">
+      <p class="antetitulo">Contacto</p>
+      <h1>Hablemos</h1>
+      <div class="entrada" set:html={markdown(texto)} />
+      <div class="columnas dos" style="margin-top:40px">
+        <div class="caja" style="display:grid;gap:20px">
+          <div style="display:flex;gap:14px"><div class="icono" style="margin:0;flex:none"><IconoWhatsApp /></div><div><b>WhatsApp</b><p style="margin:0"><a class="enlace" href={enlaceWhatsApp('Hola, Publicaciones Pneuma.')} target="_blank" rel="noopener">Escríbenos por WhatsApp</a></p></div></div>
+          <div style="display:flex;gap:14px"><div class="icono" style="margin:0;flex:none"><Icono n="correo" /></div><div><b>Correo</b><p style="margin:0"><a class="enlace" href={`mailto:${SITIO.correo}`}>{SITIO.correo}</a></p></div></div>
+          <div style="display:flex;gap:14px"><div class="icono" style="margin:0;flex:none"><Icono n="mapa" /></div><div><b>Oficina</b><p style="margin:0">{SITIO.direccion}<br /><a class="enlace" href={mapa} target="_blank" rel="noopener">Ver en el mapa</a></p></div></div>
+          <div style="display:flex;gap:14px"><div class="icono" style="margin:0;flex:none"><Icono n="reloj" /></div><div><b>Horario</b><p style="margin:0">{SITIO.horario}</p></div></div>
+        </div>
+        <form class="caja formulario" data-contacto>
+          <h2 style="font-size:1.5rem">Envíanos un mensaje</h2>
+          <p class="nota" style="margin-top:-8px">Se abre WhatsApp con tu mensaje listo para enviar.</p>
+          <div class="campo"><label for="c-nombre">Nombre</label><input id="c-nombre" name="nombre" autocomplete="name" required /></div>
+          <div class="campo"><label for="c-asunto">Asunto</label>
+            <select id="c-asunto" name="asunto"><option>Pedido de libros</option><option>Publicar una obra</option><option>Librerías e iglesias</option><option>Otro asunto</option></select>
+          </div>
+          <div class="campo"><label for="c-mensaje">Mensaje</label><textarea id="c-mensaje" name="mensaje" required></textarea></div>
+          <button class="btn whatsapp" type="submit"><IconoWhatsApp />Enviar por WhatsApp</button>
+        </form>
+      </div>
+    </div>
+  </section>
+  <section class="seccion honda">
+    <div class="envoltura" style="display:flex;flex-wrap:wrap;gap:32px;align-items:center">
+      <QR texto={enlaceWhatsApp()} titulo="Código QR para escribir a Pneuma por WhatsApp" clase="qr-grande" />
+      <div style="flex:1 1 280px"><h2>Escanea y escríbenos</h2><p class="entrada">Este código abre una conversación con Pneuma en WhatsApp. Úsalo en afiches, libros y boletines.</p><a class="btn secundario" href="/whatsapp">Ver el código para imprimir</a></div>
+    </div>
+  </section>
+  <style>.qr-grande { width: 180px; height: 180px; background: #fff; padding: 12px; border-radius: 12px; }</style>
+  <script>
+    const f = document.querySelector<HTMLFormElement>('[data-contacto]')!
+    f.addEventListener('submit', (e) => {
+      e.preventDefault()
+      const d = new FormData(f)
+      const texto = `Hola, soy ${d.get('nombre')}. Asunto: ${d.get('asunto')}.\n${d.get('mensaje')}`
+      const base = (document.querySelector('.flotante.wa') as HTMLAnchorElement).href.split('?')[0]
+      window.open(`${base}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener')
+    })
+  </script>
+</Base>

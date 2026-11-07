@@ -1,0 +1,22 @@
+---
+// Portada del libro: la imagen real si existe; si no, una portada de muestra según el Manual de Identidad:
+// un solo color fuerte, título en Fraunces, autor en Inter y el monograma siempre abajo a la izquierda.
+import type { Libro } from '../lib/datos'
+import Monograma from './Monograma.astro'
+interface Props { libro: Libro; carga?: 'lazy' | 'eager'; clase?: string }
+const { libro, carga = 'lazy', clase = '' } = Astro.props
+// Navy, rojo, papel y navy hondo: monograma blanco sobre navy y rojo, a color sobre papel.
+const fondos = [['#04044A', 't-oscuro'], ['#CD0100', 't-oscuro'], ['#F6F2EA', 't-papel'], ['#0B0B5A', 't-oscuro']]
+let h = 0
+for (const c of libro.slug) h = (h * 31 + c.charCodeAt(0)) >>> 0
+const [fondo, tono] = fondos[h % fondos.length]
+---
+{libro.portada_url ? (
+  <img class={`portada ${clase}`} src={libro.portada_url} alt={`Portada de ${libro.titulo}`} loading={carga} decoding="async" width="400" height="600" />
+) : (
+  <div class={`portada generada ${tono} ${clase}`} style={`background:${fondo}`} role="img" aria-label={`Portada de ${libro.titulo}`}>
+    <span class="pt">{libro.titulo}</span>
+    <span class="pa">{libro.autor}</span>
+    <span class="pf"><Monograma clase="pm" /><span class="ps">Publicaciones<b>Pneuma</b></span></span>
+  </div>
+)}

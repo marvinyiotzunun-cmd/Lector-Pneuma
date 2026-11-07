@@ -1,0 +1,219 @@
+[
+ {
+  "id": "lib_ejemplo_01",
+  "slug": "el-poder-de-la-oracion-constante",
+  "titulo": "El poder de la oración constante",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Ministerio de Intercesión",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 168,
+  "categoria": "Vida cristiana",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 95,
+   "disponible": true
+  },
+  "digital": {
+   "formato": "pdf",
+   "precio_compra_gtq": 57,
+   "precio_alquiler_gtq": 25,
+   "dias_alquiler": 30,
+   "en_suscripcion": true,
+   "paginas_muestra": 10
+  },
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_02",
+  "slug": "caminando-en-el-espiritu",
+  "titulo": "Caminando en el Espíritu",
+  "autor": "Autora de ejemplo",
+  "ministerio": "Ministerio Femenil",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 212,
+  "categoria": "Doctrina",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 110,
+   "disponible": true
+  },
+  "digital": {
+   "formato": "pdf",
+   "precio_compra_gtq": 66,
+   "precio_alquiler_gtq": 25,
+   "dias_alquiler": 30,
+   "en_suscripcion": true,
+   "paginas_muestra": 10
+  },
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_03",
+  "slug": "familias-sobre-la-roca",
+  "titulo": "Familias sobre la Roca",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Ministerio de la Familia",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 144,
+  "categoria": "Familia",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 85,
+   "disponible": true
+  },
+  "digital": {
+   "formato": "pdf",
+   "precio_compra_gtq": 51,
+   "precio_alquiler_gtq": 25,
+   "dias_alquiler": 30,
+   "en_suscripcion": true,
+   "paginas_muestra": 10
+  },
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_04",
+  "slug": "jovenes-con-proposito",
+  "titulo": "Jóvenes con propósito",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Ministerio Juvenil",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 128,
+  "categoria": "Juventud",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 75,
+   "disponible": true
+  },
+  "digital": null,
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_05",
+  "slug": "el-llamado-pastoral",
+  "titulo": "El llamado pastoral",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Instituto Bíblico",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 256,
+  "categoria": "Liderazgo",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 125,
+   "disponible": true
+  },
+  "digital": null,
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_06",
+  "slug": "historias-de-fe-para-ninos",
+  "titulo": "Historias de fe para niños",
+  "autor": "Autora de ejemplo",
+  "ministerio": "Ministerio Infantil",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 96,
+  "categoria": "Niñez",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 65,
+   "disponible": true
+  },
+  "digital": null,
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_07",
+  "slug": "la-sana-doctrina",
+  "titulo": "La sana doctrina",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Departamento de Educación Cristiana",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 320,
+  "categoria": "Doctrina",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 140,
+   "disponible": true
+  },
+  "digital": {
+   "formato": "pdf",
+   "precio_compra_gtq": 84,
+   "precio_alquiler_gtq": 25,
+   "dias_alquiler": 30,
+   "en_suscripcion": true,
+   "paginas_muestra": 10
+  },
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_08",
+  "slug": "adoracion-en-espiritu-y-verdad",
+  "titulo": "Adoración en espíritu y en verdad",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Ministerio de Alabanza",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 152,
+  "categoria": "Vida cristiana",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 90,
+   "disponible": true
+  },
+  "digital": null,
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ },
+ {
+  "id": "lib_ejemplo_09",
+  "slug": "mision-guatemala",
+  "titulo": "Misión Guatemala",
+  "autor": "Autor de ejemplo",
+  "ministerio": "Departamento de Misiones",
+  "sinopsis": "Sinopsis de ejemplo. Aquí va el resumen que entregue Pneuma para esta obra: de qué trata, a quién va dirigida y qué encontrará el lector en sus páginas. Este texto se reemplaza al cargar los datos reales del catálogo.",
+  "isbn": null,
+  "paginas": 184,
+  "categoria": "Misiones",
+  "portada_url": null,
+  "impreso": {
+   "precio_gtq": 100,
+   "disponible": true
+  },
+  "digital": null,
+  "tiendas": {
+   "amazon": null,
+   "google_play": null
+  }
+ }
+]

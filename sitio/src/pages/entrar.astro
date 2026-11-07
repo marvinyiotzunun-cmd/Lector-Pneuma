@@ -1,0 +1,17 @@
+---
+// Enlace mágico del correo: {SITIO_URL}/entrar?token=... En Android lo abre la app (App Links);
+// en el navegador se pasa al lector (/lector/?token=...) conservando el token y el hash.
+import { SITIO } from '../datos/sitio'
+const destino = `${SITIO.lector}/`
+---
+<!doctype html>
+<html lang="es-GT">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="robots" content="noindex" />
+  <title>Entrando · Publicaciones Pneuma</title>
+  <script is:inline define:vars={{ destino }}>location.replace(destino + location.search + location.hash)</script>
+</head>
+<body style="font-family:system-ui,sans-serif;background:#F6F2EA;color:#1C1B1F;display:grid;place-items:center;min-height:100vh;margin:0">
+  <p>Entrando al lector… <a href={destino}>Continuar</a></p>
+</body>
+</html>

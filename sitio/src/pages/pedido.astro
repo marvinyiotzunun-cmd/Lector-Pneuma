@@ -1,0 +1,128 @@
+---
+// Estado de un pedido: /pedido/<codigo>?correo=... (Cloudflare Pages reescribe /pedido/* a esta página).
+import Base from '../layouts/Base.astro'
+import IconoWhatsApp from '../components/IconoWhatsApp.astro'
+import { enlaceWhatsApp } from '../datos/sitio'
+---
+<Base titulo="Mi pedido" descripcion="Consulta el estado de tu pedido de Publicaciones Pneuma." indexar={false}>
+  <div class="envoltura">
+    <div class="estado-pedido" data-whatsapp={enlaceWhatsApp()}>
+      <div>
+        <p class="antetitulo">Pedido</p>
+        <h1 data-titulo>Consultar un pedido</h1>
+        <p class="entrada" data-subtitulo>Escribe el código de tu pedido y el correo con que lo hiciste.</p>
+      </div>
+
+      <form class="caja formulario" data-buscar hidden>
+        <div class="dos-campos">
+          <div class="campo"><label for="p-codigo">Código del pedido</label><input id="p-codigo" name="codigo" placeholder="PN-000123" required autocapitalize="characters" /></div>
+          <div class="campo"><label for="p-correo">Correo</label><input id="p-correo" name="correo" type="email" autocomplete="email" required /></div>
+        </div>
+        <button class="btn" type="submit" style="justify-self:start">Consultar</button>
+      </form>
+
+      <div data-detalle hidden style="display:grid;gap:24px">
+        <ol class="pasos-pedido" data-pasos></ol>
+        <div class="caja" data-resumen></div>
+        <div class="caja formulario" data-pago hidden>
+          <h2 style="font-size:1.4rem;margin:0">Datos para pagar</h2>
+          <div data-instrucciones></div>
+          <div class="campo"><label for="boleta">Foto o PDF de la boleta</label><input id="boleta" type="file" accept="image/*,application/pdf" /></div>
+          <div class="campo"><label for="referencia">Número de referencia (opcional)</label><input id="referencia" inputmode="numeric" /></div>
+          <button class="btn" type="button" style="justify-self:start" data-subir>Enviar comprobante</button>
+        </div>
+      </div>
+      <p class="mensaje-error" role="alert" hidden data-error></p>
+      <p class="mensaje-ok" role="status" hidden data-ok></p>
+      <a class="btn whatsapp" style="justify-self:start" href={enlaceWhatsApp('Hola, tengo una consulta sobre mi pedido.')} target="_blank" rel="noopener" data-wa><IconoWhatsApp />Consultar por WhatsApp</a>
+    </div>
+  </div>
+
+  <script>
+    import { api, sinApi } from '../scripts/api'
+    import { pedidoGuardado, quetzales } from '../scripts/carrito'
+
+    type Pedido = { id: string; codigo: string; estado: string; metodo: string; subtotal_gtq: number; envio_gtq: number; total_gtq: number
+      items?: { titulo?: string; modalidad: string; cantidad: number; precio_gtq?: number }[]
+      entrega?: { direccion: string; municipio: string; departamento: string } | null
+      instrucciones_pago?: Instr | null }
+    type Instr = { texto?: string; cuentas?: { banco: string; tipo: string; numero: string; nombre: string }[]; monto_gtq?: number; referencia?: string }
+
+    const $ = <T extends HTMLElement>(s: string) => document.querySelector<T>(s)!
+    const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+    const error = (m: string) => { $('[data-error]').hidden = false; $('[data-error]').textContent = m }
+    const ok = (m: string) => { $('[data-ok]').hidden = false; $('[data-ok]').textContent = m }
+
+    const params = new URLSearchParams(location.search)
+    const codigo = decodeURIComponent(location.pathname.split('/')[2] ?? '').trim()
+    const guardado = codigo ? pedidoGuardado(codigo) : null
+    const correo = params.get('correo') ?? guardado?.correo ?? ''
+    const id = params.get('pedido') ?? guardado?.id ?? codigo
+    const q = () => `codigo=${encodeURIComponent(codigo)}&correo=${encodeURIComponent(correo)}`
+
+    const PASOS = [['pendiente', 'Pedido recibido'], ['en_revision', 'Pago en revisión'], ['pagado', 'Pagado'], ['enviado', 'Enviado'], ['entregado', 'Entregado']]
+    const NOMBRES: Record<string, string> = { pendiente: 'Pendiente de pago', en_revision: 'Revisando tu pago', pagado: 'Pagado', enviado: 'En camino', entregado: 'Entregado', cancelado: 'Cancelado', reembolsado: 'Reembolsado' }
+    const MODOS: Record<string, string> = { impreso: 'Impreso', compra: 'Digital', alquiler: 'Alquiler digital', plan: 'Suscripción' }
+
+    function mostrar(p: Pedido) {
+      $('[data-titulo]').textContent = `Pedido ${p.codigo}`
+      $('[data-subtitulo]').textContent = NOMBRES[p.estado] ?? p.estado
+      $('[data-detalle]').hidden = false
+      const i = PASOS.findIndex(([e]) => e === p.estado)
+      $('[data-pasos]').innerHTML = ['cancelado', 'reembolsado'].includes(p.estado) ? '' : PASOS.map(([e, t], n) => `<li class="${n < i ? 'hecho' : n === i ? 'actual' : ''}">${t}</li>`).join('')
+      $('[data-resumen]').innerHTML = `
+        <ul style="list-style:none;padding:0;margin:0 0 16px;display:grid;gap:8px">${(p.items ?? []).map((x) => `<li style="display:flex;justify-content:space-between;gap:12px"><span>${x.cantidad} × ${esc(x.titulo ?? 'Libro')} <span class="nota">(${MODOS[x.modalidad] ?? x.modalidad})</span></span>${x.precio_gtq != null ? `<b>${quetzales(x.precio_gtq * x.cantidad)}</b>` : ''}</li>`).join('')}</ul>
+        <div class="totales"><div><span>Subtotal</span><span>${quetzales(p.subtotal_gtq)}</span></div><div><span>Envío</span><span>${quetzales(p.envio_gtq)}</span></div><div class="total"><span>Total</span><span>${quetzales(p.total_gtq)}</span></div></div>
+        ${p.entrega ? `<p class="nota" style="margin-top:14px">Entrega en ${esc(p.entrega.direccion)}, ${esc(p.entrega.municipio)}, ${esc(p.entrega.departamento)}.</p>` : ''}`
+      const manual = ['transferencia', 'billetera'].includes(p.metodo) && p.estado === 'pendiente'
+      $('[data-pago]').hidden = !manual
+      if (manual) {
+        const ins = p.instrucciones_pago
+        $('[data-instrucciones]').innerHTML = `${ins?.texto ? `<p>${esc(ins.texto)}</p>` : ''}<div class="cuentas">${(ins?.cuentas ?? []).map((c) => `<div><b>${esc(c.banco)}</b> · ${esc(c.tipo)} No. <b>${esc(c.numero)}</b><br><span class="nota">A nombre de ${esc(c.nombre)}</span></div>`).join('') || '<span>El equipo te enviará los datos de la cuenta por WhatsApp.</span>'}<div>Monto: <b>${quetzales(ins?.monto_gtq ?? p.total_gtq)}</b>${ins?.referencia ? ` · Referencia: <b>${esc(ins.referencia)}</b>` : ''}</div></div>`
+      }
+      $<HTMLAnchorElement>('[data-wa]').href = `${$('.estado-pedido').dataset.whatsapp}?text=${encodeURIComponent(`Hola, tengo una consulta sobre mi pedido ${p.codigo}.`)}`
+    }
+
+    async function cargar() {
+      try {
+        // Al volver de PayPal se captura el pago antes de mostrar el estado.
+        if (params.get('estado') === 'exito' && params.get('token')) {
+          await api(`/pedidos/${encodeURIComponent(id)}/paypal/capturar?${q()}`, { method: 'POST', body: JSON.stringify({ token: params.get('token') }) }).catch(() => {})
+        }
+        const r = await api<Pedido | { pedido: Pedido; instrucciones_pago?: Instr }>(`/pedidos/${encodeURIComponent(id)}?${q()}`)
+        const p = 'pedido' in r ? { ...r.pedido, instrucciones_pago: r.pedido.instrucciones_pago ?? r.instrucciones_pago } : r
+        mostrar(p)
+        if (params.get('estado') === 'exito') ok('¡Gracias! Recibimos tu pago. Te enviamos la confirmación por correo.')
+        return p
+      } catch (e) {
+        error(sinApi(e) ? 'La consulta de pedidos todavía no está disponible. Escríbenos por WhatsApp con tu código.' : (e as Error).message)
+      }
+    }
+
+    if (!codigo || !correo) {
+      const f = $<HTMLFormElement>('[data-buscar]')
+      f.hidden = false
+      if (codigo) (f.elements.namedItem('codigo') as HTMLInputElement).value = codigo
+      f.addEventListener('submit', (e) => {
+        e.preventDefault()
+        const d = new FormData(f)
+        location.href = `/pedido/${encodeURIComponent(String(d.get('codigo')).trim().toUpperCase())}?correo=${encodeURIComponent(String(d.get('correo')).trim())}`
+      })
+    } else {
+      cargar()
+      $('[data-subir]').addEventListener('click', async () => {
+        const archivo = $<HTMLInputElement>('#boleta').files?.[0]
+        if (!archivo) return error('Elige la foto o el PDF de la boleta.')
+        if (archivo.size > 8e6) return error('El archivo pesa más de 8 MB. Envía una foto más liviana.')
+        const ref = $<HTMLInputElement>('#referencia').value.trim()
+        const b = $<HTMLButtonElement>('[data-subir]'); b.disabled = true; b.textContent = 'Enviando…'
+        try {
+          await api(`/pedidos/${encodeURIComponent(id)}/comprobante?${q()}${ref ? `&referencia=${encodeURIComponent(ref)}` : ''}`, { method: 'POST', body: archivo, headers: { 'content-type': archivo.type || 'application/octet-stream' } })
+          $('[data-error]').hidden = true
+          ok('Recibimos tu comprobante. El equipo confirma el pago y te avisa por correo.')
+          await cargar()
+        } catch (e) { error((e as Error).message) } finally { b.disabled = false; b.textContent = 'Enviar comprobante' }
+      })
+    }
+  </script>
+</Base>

@@ -1,0 +1,38 @@
+[
+ {
+  "id": "solicitud-publicacion",
+  "nombre": "Solicitud de publicación",
+  "descripcion": "Datos de la obra y del ministerio que la presenta.",
+  "nombre_archivo": "solicitud-publicacion.pdf",
+  "tipo": "application/pdf",
+  "tamano_bytes": null,
+  "url": "/formatos/solicitud-publicacion.pdf"
+ },
+ {
+  "id": "carta-autorizacion",
+  "nombre": "Carta de Autorización",
+  "descripcion": "Autorización del ministerio o de la iglesia para publicar la obra.",
+  "nombre_archivo": "carta-autorizacion.pdf",
+  "tipo": "application/pdf",
+  "tamano_bytes": null,
+  "url": "/formatos/carta-autorizacion.pdf"
+ },
+ {
+  "id": "dictamen",
+  "nombre": "Formato de Dictamen",
+  "descripcion": "Formato que usa la Junta Editorial para dictaminar cada obra.",
+  "nombre_archivo": "dictamen.pdf",
+  "tipo": "application/pdf",
+  "tamano_bytes": null,
+  "url": "/formatos/dictamen.pdf"
+ },
+ {
+  "id": "creditos",
+  "nombre": "Hoja de Créditos",
+  "descripcion": "Autores, revisores, diseñadores y demás personas que participan en la obra.",
+  "nombre_archivo": "creditos.pdf",
+  "tipo": "application/pdf",
+  "tamano_bytes": null,
+  "url": "/formatos/creditos.pdf"
+ }
+]

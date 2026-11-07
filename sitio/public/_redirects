@@ -1,0 +1,3 @@
+# Cloudflare Pages. La API (/api/*), el panel (/panel) y el lector (/lector) los sirve el Worker del backend por rutas del dominio.
+/pedido/*  /pedido  200
+/nosotros  /quienes-somos  301

@@ -1,0 +1,56 @@
+---
+import Base from '../layouts/Base.astro'
+import TarjetaLibro from '../components/TarjetaLibro.astro'
+import Icono from '../components/Icono.astro'
+import { libros } from '../lib/datos'
+const todos = await libros()
+const categorias = [...new Set(todos.map((l) => l.categoria).filter(Boolean))].sort() as string[]
+const lista = { '@context': 'https://schema.org', '@type': 'ItemList', itemListElement: todos.map((l, i) => ({ '@type': 'ListItem', position: i + 1, url: new URL(`/libros/${l.slug}`, Astro.site).href, name: l.titulo })) }
+---
+<Base titulo="Catálogo" descripcion="Catálogo de libros de Publicaciones Pneuma: doctrina, vida cristiana, familia, juventud y más. Pedidos en línea con envío a domicilio." jsonld={lista}>
+  <section class="seccion" style="padding-top:48px">
+    <div class="envoltura">
+      <p class="antetitulo">Catálogo</p>
+      <h1>Todos nuestros libros</h1>
+      <p class="entrada">Elige tus libros, págalos en línea y recíbelos en casa. Algunos también se leen en digital.</p>
+      <div class="filtros">
+        <div class="buscador">
+          <Icono n="buscar" />
+          <label class="sr" for="q">Buscar por título, autor o ministerio</label>
+          <input id="q" type="search" placeholder="Buscar por título, autor o ministerio" autocomplete="off" data-buscar />
+        </div>
+        <div class="chips" role="group" aria-label="Filtrar por tema">
+          <button class="chip" type="button" aria-pressed="true" data-cat="">Todos</button>
+          {categorias.map((c) => <button class="chip" type="button" aria-pressed="false" data-cat={c}>{c}</button>)}
+        </div>
+      </div>
+      <div class="rejilla" data-rejilla>
+        {todos.map((l, i) => <TarjetaLibro libro={l} carga={i < 8 ? 'eager' : 'lazy'} />)}
+      </div>
+      <p class="sin-resultados" hidden data-vacio>No encontramos libros con esa búsqueda. Prueba con otra palabra.</p>
+    </div>
+  </section>
+  <script>
+    const q = document.querySelector<HTMLInputElement>('[data-buscar]')!
+    const chips = [...document.querySelectorAll<HTMLButtonElement>('[data-cat]')]
+    const tarjetas = [...document.querySelectorAll<HTMLElement>('[data-libro]')]
+    const vacio = document.querySelector<HTMLElement>('[data-vacio]')!
+    const sinAcentos = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    let cat = new URLSearchParams(location.search).get('tema') ?? ''
+    q.value = new URLSearchParams(location.search).get('q') ?? ''
+    function filtrar() {
+      const t = sinAcentos(q.value.trim())
+      let n = 0
+      for (const el of tarjetas) {
+        const ok = (!cat || el.dataset.categoria === cat) && (!t || sinAcentos(el.dataset.texto ?? '').includes(t))
+        el.hidden = !ok
+        if (ok) n++
+      }
+      vacio.hidden = n > 0
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.cat === cat)))
+    }
+    q.addEventListener('input', filtrar)
+    chips.forEach((c) => c.addEventListener('click', () => { cat = c.dataset.cat ?? ''; filtrar() }))
+    filtrar()
+  </script>
+</Base>

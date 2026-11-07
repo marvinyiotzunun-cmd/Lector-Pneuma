@@ -1,0 +1,181 @@
+---
+import '../estilos/global.css'
+import Monograma from '../components/Monograma.astro'
+import Icono from '../components/Icono.astro'
+import IconoWhatsApp from '../components/IconoWhatsApp.astro'
+import QR from '../components/QR.astro'
+import { SITIO, enlaceWhatsApp } from '../datos/sitio'
+import { usandoEjemplo } from '../lib/datos'
+
+interface Props {
+  titulo: string
+  descripcion?: string
+  imagen?: string
+  tipo?: 'website' | 'book' | 'article'
+  jsonld?: Record<string, unknown> | Record<string, unknown>[]
+  indexar?: boolean
+}
+const { titulo, descripcion = 'Libros cristianos de los ministerios de la Iglesia de Dios Evangelio Completo de Guatemala. Catálogo, pedidos con envío a domicilio y proceso de publicación.', imagen, tipo = 'website', jsonld, indexar = true } = Astro.props
+const tituloCompleto = titulo === SITIO.nombre ? titulo : `${titulo} · ${SITIO.nombre}`
+const canonica = new URL(Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '/'), Astro.site)
+const imagenOg = imagen ? new URL(imagen, Astro.site).href : new URL('/og.png', Astro.site).href
+const ruta = Astro.url.pathname.replace(/\.html$/, '')
+const nav = [
+  ['/', 'Inicio'], ['/quienes-somos', 'Quiénes somos'], ['/proceso', 'Proceso de publicación'], ['/catalogo', 'Catálogo'], ['/formatos', 'Formatos'], ['/contacto', 'Contacto'],
+]
+const actual = (h: string) => (h === '/' ? ruta === '/' : ruta.startsWith(h)) ? 'page' : undefined
+const organizacion = {
+  '@context': 'https://schema.org', '@type': 'Organization', name: SITIO.nombre, url: Astro.site?.href, email: SITIO.correo,
+  logo: new URL('/favicon.svg', Astro.site).href,
+  address: { '@type': 'PostalAddress', streetAddress: '7a. avenida 32-31, zona 11, Las Charcas', addressLocality: 'Ciudad de Guatemala', addressCountry: 'GT' },
+}
+const ld = [organizacion, ...(jsonld ? (Array.isArray(jsonld) ? jsonld : [jsonld]) : [])]
+---
+<!doctype html>
+<html lang="es-GT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{tituloCompleto}</title>
+  <meta name="description" content={descripcion} />
+  <link rel="canonical" href={canonica.href} />
+  {!indexar && <meta name="robots" content="noindex" />}
+  <meta name="theme-color" content="#04044A" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:site_name" content={SITIO.nombre} />
+  <meta property="og:locale" content="es_GT" />
+  <meta property="og:type" content={tipo} />
+  <meta property="og:title" content={titulo} />
+  <meta property="og:description" content={descripcion} />
+  <meta property="og:url" content={canonica.href} />
+  <meta property="og:image" content={imagenOg} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+</head>
+<body>
+  <a class="saltar" href="#contenido">Ir al contenido</a>
+  {usandoEjemplo && <div class="aviso-ejemplo">Vista previa con datos de ejemplo. El catálogo real se carga con la información que entregue Pneuma.</div>}
+  <header class="cabecera">
+    <div class="envoltura">
+      <a class="marca" href="/" aria-label="Publicaciones Pneuma, inicio">
+        <Monograma />
+        <span><b>Pneuma</b><small>Publicaciones</small></span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Principal">
+        {nav.map(([h, t]) => <a href={h} aria-current={actual(h)}>{t}</a>)}
+        <a class="btn" href={SITIO.ventanilla}>Presentar una obra</a>
+      </nav>
+      <div class="acciones">
+        <a class="btn chico" href={SITIO.ventanilla}>Presentar una obra</a>
+        <a class="carrito-boton" href="/carrito" aria-label="Ver carrito">
+          <Icono n="carrito" /><span class="cuenta" data-cuenta-carrito hidden>0</span>
+        </a>
+        <button class="menu-boton" type="button" aria-controls="nav" aria-expanded="false" aria-label="Abrir menú" data-menu>
+          <Icono n="menu" />
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="contenido"><slot /></main>
+
+  <footer class="pie">
+    <div class="envoltura">
+      <div class="cols">
+        <div>
+          <a class="marca" href="/"><Monograma /><span><b>Pneuma</b><small>Publicaciones</small></span></a>
+          <p style="margin-top:16px;max-width:36ch">{SITIO.lema}.</p>
+          <div class="qr">
+            <QR texto={enlaceWhatsApp()} titulo="Código QR para escribir a Pneuma por WhatsApp" />
+            <span>Escanea para escribirnos por WhatsApp.<br /><a href="/whatsapp">Imprimir el código</a></span>
+          </div>
+        </div>
+        <div>
+          <h4>Sitio</h4>
+          <ul>{nav.map(([h, t]) => <li><a href={h}>{t}</a></li>)}</ul>
+        </div>
+        <div>
+          <h4>Servicios</h4>
+          <ul>
+            <li><a href={SITIO.ventanilla}>Ventanilla de publicación</a></li>
+            <li><a href={SITIO.lector}>Lector digital</a></li>
+            <li><a href="/carrito">Mi carrito</a></li>
+            <li><a href="/pedido">Consultar un pedido</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href={`mailto:${SITIO.correo}`}>{SITIO.correo}</a></li>
+            <li><a href={enlaceWhatsApp()} rel="noopener" target="_blank">WhatsApp</a></li>
+            <li>{SITIO.direccion}</li>
+            {SITIO.redes.facebook && <li><a href={SITIO.redes.facebook} rel="noopener" target="_blank">Facebook</a></li>}
+            {SITIO.redes.instagram && <li><a href={SITIO.redes.instagram} rel="noopener" target="_blank">Instagram</a></li>}
+            {SITIO.redes.youtube && <li><a href={SITIO.redes.youtube} rel="noopener" target="_blank">YouTube</a></li>}
+          </ul>
+        </div>
+      </div>
+      <div class="base">
+        <span>© {new Date().getFullYear()} {SITIO.nombre}. Todos los derechos reservados.</span>
+        <a href="https://www.tecnoiagt.com" rel="noopener" target="_blank">Sitio desarrollado por Tecnoiagt</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="flotantes">
+    <button class="flotante ia" type="button" aria-label="Abrir el asistente" aria-controls="asistente" aria-expanded="false" data-abrir-asistente>
+      <Icono n="chispa" />
+    </button>
+    <a class="flotante wa" href={enlaceWhatsApp('Hola, Publicaciones Pneuma. Quisiera información.')} target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+      <IconoWhatsApp />
+    </a>
+  </div>
+
+  <section class="asistente" id="asistente" hidden aria-label="Asistente de Publicaciones Pneuma" data-whatsapp={enlaceWhatsApp()}>
+    <header>
+      <div><b>Asistente Pneuma</b><span>Responde sobre el proceso, el catálogo y los pedidos</span></div>
+      <button type="button" aria-label="Cerrar el asistente" data-cerrar-asistente><Icono n="cerrar" /></button>
+    </header>
+    <div class="mensajes" aria-live="polite" data-mensajes>
+      <div class="burbuja asis">Hola, soy el asistente de Publicaciones Pneuma. ¿En qué te ayudo?</div>
+    </div>
+    <div class="sugerencias" data-sugerencias>
+      <button type="button">¿Cómo publico un libro?</button>
+      <button type="button">¿Hacen envíos a domicilio?</button>
+      <button type="button">¿Qué formas de pago aceptan?</button>
+    </div>
+    <form data-form-asistente>
+      <label class="sr" for="pregunta">Escribe tu pregunta</label>
+      <input id="pregunta" name="pregunta" autocomplete="off" placeholder="Escribe tu pregunta" maxlength="500" required />
+      <button type="submit" aria-label="Enviar"><Icono n="enviar" /></button>
+    </form>
+  </section>
+
+  <script>
+    import { contarCarrito } from '../scripts/carrito'
+    import { iniciarAsistente } from '../scripts/asistente'
+
+    const pintarCuenta = () => {
+      const n = contarCarrito()
+      document.querySelectorAll<HTMLElement>('[data-cuenta-carrito]').forEach((el) => { el.textContent = String(n); el.hidden = n === 0 })
+    }
+    pintarCuenta()
+    window.addEventListener('carrito', pintarCuenta)
+    window.addEventListener('storage', pintarCuenta)
+
+    // Menú en celular: se cierra al tocar fuera, al elegir una opción o con Escape.
+    const boton = document.querySelector<HTMLButtonElement>('[data-menu]')!
+    const nav = document.getElementById('nav')!
+    const cerrar = () => { nav.classList.remove('abierto'); boton.setAttribute('aria-expanded', 'false') }
+    boton.addEventListener('click', (e) => { e.stopPropagation(); const abierto = nav.classList.toggle('abierto'); boton.setAttribute('aria-expanded', String(abierto)) })
+    document.addEventListener('click', (e) => { if (!nav.contains(e.target as Node)) cerrar() })
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar() })
+    nav.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) cerrar() })
+
+    iniciarAsistente()
+  </script>
+</body>
+</html>
