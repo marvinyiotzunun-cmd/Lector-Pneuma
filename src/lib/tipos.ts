@@ -1,41 +1,74 @@
 export type Formato = 'epub' | 'pdf'
 
-export interface Libro {
+export interface EntradaIndice {
+  etiqueta: string
+  pagina: number // desde 1
+  nivel: number
+}
+
+// manifiesto.json de cada obra en R2 (docs/api.md). titulo y autor son extras que el panel usa para prellenar la ficha.
+export interface Manifiesto {
+  formato: Formato
+  tipo_pagina: 'webp' | 'html'
+  total_paginas: number
+  ancho?: number // tamaño de las páginas de PDF, para reservar espacio antes de que lleguen
+  alto?: number
+  indice: EntradaIndice[]
+  titulo?: string
+  autor?: string
+}
+
+export type TipoAcceso = 'compra' | 'alquiler' | 'suscripcion' | 'canje' | 'cortesia' | 'muestra'
+
+export interface Obra {
   id: string
   titulo: string
   autor: string
-  descripcion: string | null
   formato: Formato
-  archivo_ruta: string
-  portada_ruta: string | null
+  portada_url: string | null
   color: string | null
+  acceso: TipoAcceso
+  vence_en: string | null // alquiler o suscripción
+  paginas_muestra: number | null // solo si acceso = muestra
 }
 
-// "ubicacion" es un CFI en EPUB y el número de página en PDF.
+export type Pagina =
+  | { tipo: 'html'; html: string }
+  | { tipo: 'imagen'; imagen: Blob }
+
 export interface Progreso {
-  ubicacion: string
+  pagina: number
   porcentaje: number
 }
 
 export interface Marcador {
   id: string
-  ubicacion: string
+  pagina: number
   etiqueta: string
   creado_en: string
 }
 
+// Un subrayado se ubica por página, bloque (párrafo) y posición de los caracteres dentro del bloque.
 export interface Subrayado {
   id: string
-  ubicacion: string
+  pagina: number
+  bloque: number
+  inicio: number
+  fin: number
   texto: string
   nota: string
   creado_en: string
 }
 
-export interface EntradaIndice {
-  etiqueta: string
-  ubicacion: string
-  nivel: number
+export interface Dispositivo {
+  id: string
+  nombre: string
+  plataforma: string
+  ultimo_uso: string
+}
+
+export interface Usuario {
+  correo: string
 }
 
 export type Tema = 'claro' | 'sepia' | 'noche'

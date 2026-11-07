@@ -7,11 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:demo": "tsc -b && vite build --mode demo"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
-    "epubjs": "^0.3.93",
+    "jszip": "^3.10.1",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

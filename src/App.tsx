@@ -1,41 +1,87 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { HashRouter, Route, Routes, useParams } from 'react-router-dom'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from './lib/supabase'
+import { fuente } from './lib/fuente-activa'
+import { ErrorApi } from './lib/fuente'
+import type { Dispositivo } from './lib/tipos'
 import Biblioteca from './paginas/Biblioteca'
 import Entrar from './paginas/Entrar'
+import Dispositivos from './paginas/Dispositivos'
 
-// El lector (epub.js y pdf.js) se carga solo al abrir un libro.
 const Lector = lazy(() => import('./paginas/Lector'))
 
-export default function App() {
-  const [sesion, setSesion] = useState<Session | null | undefined>(supabase ? undefined : null)
+type Estado =
+  | { tipo: 'cargando' }
+  | { tipo: 'fuera'; error?: string }
+  | { tipo: 'limite'; lista: (Dispositivo & { actual: boolean })[] }
+  | { tipo: 'dentro'; correo: string }
 
-  useEffect(() => {
-    if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => setSesion(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSesion(s))
-    return () => data.subscription.unsubscribe()
+// El enlace del correo trae ?token=... (en la web o al abrir la app desde el enlace).
+function tokenDeUrl(url: string): string | null {
+  try {
+    const u = new URL(url)
+    return u.searchParams.get('token') ?? new URLSearchParams(u.hash.split('?')[1] ?? '').get('token')
+  } catch {
+    return null
+  }
+}
+
+export default function App() {
+  const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' })
+
+  const arrancar = useCallback(async (token?: string | null) => {
+    try {
+      if (token) {
+        await fuente.verificar(token)
+        history.replaceState(null, '', location.pathname + location.hash.split('?')[0])
+      }
+      const u = await fuente.yo()
+      if (!u) return setEstado({ tipo: 'fuera' })
+      try {
+        await fuente.registrarDispositivo()
+      } catch (e) {
+        if (e instanceof ErrorApi && e.codigo === 'limite_dispositivos') {
+          return setEstado({ tipo: 'limite', lista: (e.datos.dispositivos as (Dispositivo & { actual: boolean })[]) ?? [] })
+        }
+        throw e
+      }
+      setEstado({ tipo: 'dentro', correo: u.correo })
+    } catch (e) {
+      setEstado({ tipo: 'fuera', error: e instanceof ErrorApi && e.status === 400 ? 'El enlace ya venció o ya se usó. Pide uno nuevo.' : undefined })
+    }
   }, [])
 
-  if (sesion === undefined) return null
-  if (supabase && !sesion) return <Entrar />
+  useEffect(() => {
+    arrancar(tokenDeUrl(location.href))
+    // En la app, el enlace del correo abre la app (App Links) y llega por este evento.
+    const cap = (window as { Capacitor?: { Plugins?: { App?: { addListener: (e: string, f: (d: { url: string }) => void) => void } } } }).Capacitor
+    cap?.Plugins?.App?.addListener('appUrlOpen', ({ url }) => { const t = tokenDeUrl(url); if (t) arrancar(t) })
+  }, [arrancar])
+
+  if (estado.tipo === 'cargando') return null
+  if (estado.tipo === 'fuera') return <Entrar error={estado.error} />
+  if (estado.tipo === 'limite') return <Dispositivos limite lista={estado.lista} onListo={() => arrancar()} />
+
+  const salir = async () => {
+    await fuente.salir()
+    setEstado({ tipo: 'fuera' })
+  }
 
   // HashRouter para que las rutas funcionen igual en la web y dentro de la app (Capacitor).
   return (
     <HashRouter>
       <Suspense fallback={null}>
-      <Routes>
-        <Route path="/" element={<Biblioteca />} />
-        <Route path="/leer/:id" element={<LectorPorLibro />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Biblioteca correo={estado.correo} onSalir={salir} />} />
+          <Route path="/dispositivos" element={<Dispositivos />} />
+          <Route path="/leer/:id" element={<LectorPorLibro correo={estado.correo} />} />
+        </Routes>
       </Suspense>
     </HashRouter>
   )
 }
 
 // Una instancia nueva del lector por cada libro, para no arrastrar estado de uno a otro.
-function LectorPorLibro() {
+function LectorPorLibro({ correo }: { correo: string }) {
   const { id } = useParams()
-  return <Lector key={id} />
+  return <Lector key={id} correo={correo} />
 }
