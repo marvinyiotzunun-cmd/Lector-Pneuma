@@ -88,10 +88,10 @@ function Portada({ libro }: { libro: Obra }) {
   if (libro.portada_url) return <img className="portada" src={libro.portada_url} alt={`Portada de ${libro.titulo}`} loading="lazy" />
   const color = libro.color ?? '#04044A'
   return (
-    <div className="portada generada" style={{ background: `linear-gradient(160deg, ${color}, color-mix(in srgb, ${color} 60%, #000))` }}>
-      <Monograma variante="blanco" className="pm" />
+    <div className="portada generada" style={{ background: color }}>
       <span className="pt">{libro.titulo}</span>
-      <span className="pa">Publicaciones Pneuma</span>
+      <span className="pa">{libro.autor}</span>
+      <Monograma variante="blanco" className="pm" />
     </div>
   )
 }

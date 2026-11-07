@@ -8,8 +8,9 @@ import type { Marcador, Pagina, Preferencias, Subrayado } from '../lib/tipos'
 import VistaPagina, { type SeleccionTexto } from '../lector/VistaPagina'
 import { fondoMarcaAgua, useProteccion } from '../lector/proteccion'
 
-const PREF_INICIAL: Preferencias = { tema: 'claro', tamano: 100, fuente: 'serif' }
-const COLOR_MARCA = { claro: 'rgba(4,4,74,0.07)', sepia: 'rgba(59,48,36,0.08)', noche: 'rgba(255,255,255,0.06)' }
+const PREF_INICIAL: Preferencias = { tema: 'sepia', tamano: 100, fuente: 'sans' }
+const COLOR_MARCA = { claro: 'rgba(4,4,74,0.07)', sepia: 'rgba(4,4,74,0.07)', noche: 'rgba(255,255,255,0.07)' }
+const NOMBRE_TEMA = { claro: 'Blanco', sepia: 'Papel', noche: 'Navy' }
 
 type Panel = null | 'indice' | 'apariencia' | 'nota'
 type Estado = { tipo: 'cargando' } | { tipo: 'lista'; pagina: Pagina } | { tipo: 'fin_muestra' } | { tipo: 'error'; mensaje: string; reintentar?: boolean }
@@ -214,7 +215,7 @@ export default function Lector({ correo }: { correo: string }) {
           <div className="fila">
             {(['claro', 'sepia', 'noche'] as const).map((t) => (
               <button key={t} className={`ficha tema-${t}`} aria-pressed={pref.tema === t} onClick={() => setPref({ ...pref, tema: t })}>
-                {t[0].toUpperCase() + t.slice(1)}
+                {NOMBRE_TEMA[t]}
               </button>
             ))}
           </div>
@@ -228,7 +229,7 @@ export default function Lector({ correo }: { correo: string }) {
             <>
               <h4>Tipo de letra</h4>
               <div className="fila">
-                <button className="ficha f-serif" aria-pressed={pref.fuente === 'serif'} onClick={() => setPref({ ...pref, fuente: 'serif' })}>Literata</button>
+                <button className="ficha f-serif" aria-pressed={pref.fuente === 'serif'} onClick={() => setPref({ ...pref, fuente: 'serif' })}>Fraunces</button>
                 <button className="ficha f-sans" aria-pressed={pref.fuente === 'sans'} onClick={() => setPref({ ...pref, fuente: 'sans' })}>Inter</button>
               </div>
             </>
