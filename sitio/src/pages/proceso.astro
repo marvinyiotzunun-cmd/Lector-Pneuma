@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro'
+import Icono from '../components/Icono.astro'
+import { etapas, contenido, markdown } from '../lib/datos'
+import { SITIO } from '../datos/sitio'
+const pasos = await etapas()
+const intro = await contenido('proceso')
+const howto = { '@context': 'https://schema.org', '@type': 'HowTo', name: 'Cómo publicar un libro con Publicaciones Pneuma', step: pasos.map((e) => ({ '@type': 'HowToStep', position: e.numero, name: e.nombre, text: e.descripcion })) }
+---
+<Base titulo="Proceso de publicación" descripcion="Las ocho etapas para publicar una obra con Publicaciones Pneuma, desde la solicitud hasta el libro publicado." jsonld={howto}>
+  <section class="seccion">
+    <div class="envoltura">
+      <p class="antetitulo">Proceso de publicación</p>
+      <h1>Del manuscrito al libro, en ocho etapas</h1>
+      <div class="entrada" set:html={markdown(intro)} />
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px">
+        <a class="btn" href={SITIO.ventanilla}><Icono n="pluma" />Presentar una obra</a>
+        <a class="btn secundario" href={SITIO.ventanilla}>Seguir mi expediente</a>
+        <a class="btn secundario" href="/formatos"><Icono n="descargar" />Descargar formatos</a>
+      </div>
+      <ol class="etapas">
+        {pasos.map((e) => <li class="etapa"><span class="n">{e.numero}</span><h3>{e.nombre}</h3><p>{e.descripcion}</p></li>)}
+      </ol>
+    </div>
+  </section>
+  <section class="seccion honda">
+    <div class="envoltura">
+      <h2>Qué necesitas para empezar</h2>
+      <div class="columnas" style="margin-top:28px">
+        <div class="caja"><h3>Manuscrito completo</h3><p>En Word o PDF, con título, índice y datos del autor.</p></div>
+        <div class="caja"><h3>Carta de Autorización</h3><p>Firmada por el ministerio o la iglesia que presenta la obra.</p></div>
+        <div class="caja"><h3>Datos del ministerio</h3><p>Nombre, persona de contacto, teléfono y correo para recibir los avisos de cada etapa.</p></div>
+      </div>
+    </div>
+  </section>
+</Base>

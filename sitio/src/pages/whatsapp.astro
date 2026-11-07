@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro'
+import QR from '../components/QR.astro'
+import Monograma from '../components/Monograma.astro'
+import { enlaceWhatsApp, SITIO } from '../datos/sitio'
+---
+<Base titulo="WhatsApp de Pneuma" descripcion="Código QR para escribir a Publicaciones Pneuma por WhatsApp." indexar={false}>
+  <section class="seccion">
+    <div class="envoltura" style="display:grid;justify-items:center;text-align:center;gap:20px">
+      <div class="hoja-qr">
+        <Monograma clase="qr-mono" />
+        <p class="antetitulo" style="margin:0">Publicaciones Pneuma</p>
+        <h1 style="font-size:2rem;margin:0">Escríbenos por WhatsApp</h1>
+        <QR texto={enlaceWhatsApp()} titulo="Código QR para escribir a Pneuma por WhatsApp" clase="qr-hoja" />
+        <p style="margin:0">Escanea con la cámara de tu teléfono.<br />{SITIO.correo}</p>
+      </div>
+      <button class="btn" type="button" onclick="print()">Imprimir</button>
+    </div>
+  </section>
+  <style>
+    .hoja-qr { display: grid; justify-items: center; gap: 14px; padding: 40px 32px; background: #fff; color: #1C1B1F; border: 1px solid var(--linea); border-radius: 16px; max-width: 420px; width: 100%; }
+    .hoja-qr h1 { color: #04044A; }
+    .hoja-qr .mono-atras { fill: #04044A; } .hoja-qr .mono-adelante { fill: #CD0100; }
+    .qr-mono { height: 56px; width: auto; }
+    .qr-hoja { width: 240px; height: 240px; }
+    @media print { .btn, .aviso-ejemplo { display: none !important; } .hoja-qr { border: 0; } }
+  </style>
+</Base>

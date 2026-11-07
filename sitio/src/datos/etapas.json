@@ -1,0 +1,42 @@
+[
+ {
+  "numero": 1,
+  "nombre": "Solicitud recibida",
+  "descripcion": "El ministerio presenta su obra en la ventanilla digital con el manuscrito y la Carta de Autorización."
+ },
+ {
+  "numero": 2,
+  "nombre": "Revisión de admisión",
+  "descripcion": "La Dirección Editorial verifica que la solicitud esté completa y que la obra encaje con la línea del sello."
+ },
+ {
+  "numero": 3,
+  "nombre": "Dictamen de la Junta Editorial",
+  "descripcion": "La Junta Editorial revisa el contenido doctrinal y editorial y emite su dictamen."
+ },
+ {
+  "numero": 4,
+  "nombre": "Corrección de estilo",
+  "descripcion": "Un corrector revisa ortografía, gramática y claridad, y devuelve las observaciones al autor."
+ },
+ {
+  "numero": 5,
+  "nombre": "Diseño y diagramación",
+  "descripcion": "Se diseñan la portada y el interior con la identidad de Publicaciones Pneuma."
+ },
+ {
+  "numero": 6,
+  "nombre": "Pruebas y aprobación del autor",
+  "descripcion": "El autor revisa las pruebas finales y firma su aprobación."
+ },
+ {
+  "numero": 7,
+  "nombre": "ISBN e impresión",
+  "descripcion": "Se tramita el ISBN ante la agencia de Guatemala y la obra pasa a imprenta."
+ },
+ {
+  "numero": 8,
+  "nombre": "Publicada",
+  "descripcion": "La obra entra al catálogo, a la tienda en línea y, si se desea, a Amazon y Google Play Libros."
+ }
+]

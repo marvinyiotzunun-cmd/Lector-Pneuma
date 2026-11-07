@@ -1,0 +1,31 @@
+---
+import Base from '../layouts/Base.astro'
+import Icono from '../components/Icono.astro'
+import { formatos } from '../lib/datos'
+import { SITIO } from '../datos/sitio'
+const lista = await formatos()
+const tam = (b: number | null) => (b ? (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.ceil(b / 1e3)} KB`) : '')
+const ext = (f: { nombre_archivo: string; tipo: string }) => (f.nombre_archivo.split('.').pop() ?? '').toUpperCase()
+---
+<Base titulo="Formatos oficiales" descripcion="Descarga los formatos oficiales de Publicaciones Pneuma: solicitud de publicación, Carta de Autorización, Dictamen y Créditos.">
+  <section class="seccion">
+    <div class="envoltura">
+      <p class="antetitulo">Formatos oficiales</p>
+      <h1>Documentos para publicar</h1>
+      <p class="entrada">Descarga, llena y adjunta estos formatos al presentar tu obra en la ventanilla digital.</p>
+      <ul class="lista-formatos">
+        {lista.map((f) => (
+          <li class="formato">
+            <span class="icono"><Icono n="documento" /></span>
+            <div><b>{f.nombre}</b><span>{f.descripcion}{(ext(f) || f.tamano_bytes) && <> · {[ext(f), tam(f.tamano_bytes)].filter(Boolean).join(', ')}</>}</span></div>
+            <a class="btn secundario chico" href={f.url} download={f.nombre_archivo}><Icono n="descargar" />Descargar</a>
+          </li>
+        ))}
+      </ul>
+      <div class="banda" style="margin-top:56px">
+        <div><h2>¿Ya tienes tus formatos listos?</h2><p>Presenta tu obra en línea y recibe tu código de expediente.</p></div>
+        <div class="botones"><a class="btn" href={SITIO.ventanilla}>Presentar una obra</a></div>
+      </div>
+    </div>
+  </section>
+</Base>

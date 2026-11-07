@@ -1,0 +1,106 @@
+---
+import Base from '../layouts/Base.astro'
+import Portada from '../components/Portada.astro'
+import TarjetaLibro from '../components/TarjetaLibro.astro'
+import Icono from '../components/Icono.astro'
+import IconoWhatsApp from '../components/IconoWhatsApp.astro'
+import { libros, etapas, contenido } from '../lib/datos'
+import { SITIO, enlaceWhatsApp } from '../datos/sitio'
+
+const todos = await libros()
+const destacados = todos.slice(0, 8)
+const pasos = await etapas()
+const frase = await contenido('inicio')
+const ministerios = new Set(todos.map((l) => l.ministerio).filter(Boolean)).size
+---
+<Base titulo={SITIO.nombre} descripcion={`${frase} Catálogo de libros cristianos con envío a domicilio en Guatemala y proceso de publicación para ministerios.`}>
+  <section class="heroe">
+    <div class="envoltura">
+      <div>
+        <p class="antetitulo">Sello editorial</p>
+        <h1>Libros para <em>crecer</em> en la fe</h1>
+        <p class="entrada">{frase}</p>
+        <div class="botones">
+          <a class="btn" href="/catalogo"><Icono n="libro" />Ver catálogo</a>
+          <a class="btn secundario" href="/proceso">Publicar con Pneuma</a>
+        </div>
+      </div>
+      <div class="pila" aria-hidden="true">
+        {[0, 3, 2].map((i) => todos[i]).filter(Boolean).map((l) => <Portada libro={l} carga="eager" />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="envoltura">
+      <div class="cifras">
+        <div class="cifra"><b>{todos.length}</b><span>obras en el catálogo</span></div>
+        <div class="cifra"><b>{ministerios}</b><span>ministerios que publican</span></div>
+        <div class="cifra"><b>8</b><span>etapas de cuidado editorial</span></div>
+        <div class="cifra"><b>22</b><span>departamentos con envío a domicilio</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion honda">
+    <div class="envoltura">
+      <p class="antetitulo">Catálogo</p>
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:16px;margin-bottom:36px">
+        <h2 style="margin:0">Novedades y obras destacadas</h2>
+        <a class="enlace" href="/catalogo">Ver todo el catálogo</a>
+      </div>
+      <div class="rejilla">{destacados.map((l) => <TarjetaLibro libro={l} />)}</div>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="envoltura">
+      <div class="columnas">
+        <div class="caja">
+          <div class="icono"><Icono n="camion" /></div>
+          <h3>Envío a domicilio</h3>
+          <p>Pide tus libros impresos en línea y recíbelos en tu casa, iglesia u oficina en cualquier parte de Guatemala.</p>
+          <a class="enlace" href="/catalogo">Pedir libros</a>
+        </div>
+        <div class="caja">
+          <div class="icono"><Icono n="pluma" /></div>
+          <h3>Publica tu obra</h3>
+          <p>Los ministerios presentan su manuscrito en línea y siguen cada etapa con su código de expediente.</p>
+          <a class="enlace" href={SITIO.ventanilla}>Presentar una obra</a>
+        </div>
+        <div class="caja">
+          <div class="icono"><Icono n="tienda" /></div>
+          <h3>Lectura digital</h3>
+          <p>Algunas obras se leen en el lector de Pneuma y en tiendas como Amazon y Google Play Libros.</p>
+          <a class="enlace" href={SITIO.lector}>Abrir el lector</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion honda">
+    <div class="envoltura">
+      <p class="antetitulo">Proceso de publicación</p>
+      <h2>Ocho etapas, del manuscrito al lector</h2>
+      <p class="entrada">Cada obra recibe revisión doctrinal, corrección, diseño e ISBN antes de llegar a la iglesia.</p>
+      <ol class="etapas">
+        {pasos.map((e) => <li class="etapa"><span class="n">{e.numero}</span><h3>{e.nombre}</h3><p>{e.descripcion}</p></li>)}
+      </ol>
+    </div>
+  </section>
+
+  <section class="seccion">
+    <div class="envoltura">
+      <div class="banda">
+        <div>
+          <h2>¿Tienes preguntas?</h2>
+          <p>Escríbenos por WhatsApp o pregunta al asistente: te ayudamos con pedidos, pagos y el proceso de publicación.</p>
+        </div>
+        <div class="botones">
+          <a class="btn whatsapp" href={enlaceWhatsApp('Hola, Publicaciones Pneuma. Quisiera información.')} target="_blank" rel="noopener"><IconoWhatsApp />Escríbenos por WhatsApp</a>
+          <a class="btn claro" href="/contacto">Ver contacto</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

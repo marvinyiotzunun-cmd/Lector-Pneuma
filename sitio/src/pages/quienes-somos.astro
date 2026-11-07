@@ -1,0 +1,34 @@
+---
+import Base from '../layouts/Base.astro'
+import Icono from '../components/Icono.astro'
+import { contenido, markdown } from '../lib/datos'
+import { SITIO } from '../datos/sitio'
+const texto = await contenido('quienes-somos')
+---
+<Base titulo="Quiénes somos" descripcion="Publicaciones Pneuma es el sello editorial de la Iglesia de Dios Evangelio Completo de Guatemala.">
+  <section class="seccion">
+    <div class="envoltura">
+      <p class="antetitulo">Quiénes somos</p>
+      <h1>El sello editorial de la iglesia</h1>
+      <div class="prosa" set:html={markdown(texto)} />
+    </div>
+  </section>
+  <section class="seccion honda">
+    <div class="envoltura">
+      <h2>Lo que hacemos</h2>
+      <div class="columnas" style="margin-top:32px">
+        <div class="caja"><div class="icono"><Icono n="escudo" /></div><h3>Cuidado doctrinal</h3><p>Una Junta Editorial revisa cada obra antes de publicarla, para que lo que llega a la iglesia sea fiel a la Palabra.</p></div>
+        <div class="caja"><div class="icono"><Icono n="documento" /></div><h3>Calidad editorial</h3><p>Corrección de estilo, diseño de portada e interior, ISBN y normas editoriales para cada libro.</p></div>
+        <div class="caja"><div class="icono"><Icono n="camion" /></div><h3>Distribución</h3><p>Venta en línea con envío a domicilio, lectura digital y presencia en Amazon y Google Play Libros.</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="seccion">
+    <div class="envoltura">
+      <div class="banda">
+        <div><h2>¿Tu ministerio tiene una obra?</h2><p>Conoce las ocho etapas y presenta tu manuscrito en línea.</p></div>
+        <div class="botones"><a class="btn claro" href="/proceso">Ver el proceso</a><a class="btn" href={SITIO.ventanilla}>Presentar una obra</a></div>
+      </div>
+    </div>
+  </section>
+</Base>

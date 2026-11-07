@@ -1,0 +1,176 @@
+---
+import Base from '../layouts/Base.astro'
+import Icono from '../components/Icono.astro'
+import IconoWhatsApp from '../components/IconoWhatsApp.astro'
+import { SITIO, enlaceWhatsApp } from '../datos/sitio'
+const departamentos = ['Guatemala', 'Alta Verapaz', 'Baja Verapaz', 'Chimaltenango', 'Chiquimula', 'El Progreso', 'Escuintla', 'Huehuetenango', 'Izabal', 'Jalapa', 'Jutiapa', 'Petén', 'Quetzaltenango', 'Quiché', 'Retalhuleu', 'Sacatepéquez', 'San Marcos', 'Santa Rosa', 'Sololá', 'Suchitepéquez', 'Totonicapán', 'Zacapa']
+---
+<Base titulo="Carrito" descripcion="Tu carrito de Publicaciones Pneuma." indexar={false}>
+  <div class="envoltura">
+    <h1 style="margin-top:40px">Tu carrito</h1>
+    <div class="vacio" hidden data-vacio>
+      <Icono n="carrito" />
+      <p>Tu carrito está vacío.</p>
+      <a class="btn" href="/catalogo">Ver el catálogo</a>
+    </div>
+    <div class="carrito" hidden data-lleno data-envio={SITIO.envio_gtq} data-whatsapp={enlaceWhatsApp()}>
+      <div>
+        <ul class="lineas" data-lineas></ul>
+        <form class="formulario" style="margin-top:40px" data-pago novalidate>
+          <h2 style="font-size:1.5rem;margin:0">Tus datos</h2>
+          <div class="dos-campos">
+            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" name="nombre" autocomplete="name" required /></div>
+            <div class="campo"><label for="telefono">Teléfono</label><input id="telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" required placeholder="5555 5555" /></div>
+          </div>
+          <div class="campo"><label for="correo">Correo electrónico</label><input id="correo" name="correo" type="email" autocomplete="email" required /><span class="nota">Te enviamos la confirmación del pedido. Si compras libros digitales, se leen con este correo.</span></div>
+
+          <fieldset class="metodos" data-bloque-entrega>
+            <legend>Entrega de los libros impresos</legend>
+            <label class="metodo"><input type="radio" name="entrega" value="domicilio" checked /><div><b>Envío a domicilio</b><span>A cualquier parte de Guatemala, por courier.</span></div></label>
+            <label class="metodo"><input type="radio" name="entrega" value="oficina" /><div><b>Recoger en la oficina</b><span>{SITIO.direccion}. Sin costo de envío.</span></div></label>
+          </fieldset>
+          <div class="formulario" data-direccion>
+            <div class="campo"><label for="direccion">Dirección</label><input id="direccion" name="direccion" autocomplete="street-address" placeholder="Calle, número, colonia o aldea" /></div>
+            <div class="dos-campos">
+              <div class="campo"><label for="departamento">Departamento</label><select id="departamento" name="departamento" autocomplete="address-level1">{departamentos.map((d) => <option>{d}</option>)}</select></div>
+              <div class="campo"><label for="municipio">Municipio</label><input id="municipio" name="municipio" autocomplete="address-level2" /></div>
+            </div>
+            <div class="campo"><label for="referencia">Referencia (opcional)</label><input id="referencia" name="referencia" placeholder="Frente a la iglesia, casa de portón negro" /></div>
+          </div>
+
+          <fieldset class="metodos">
+            <legend>Forma de pago</legend>
+            <label class="metodo"><input type="radio" name="metodo" value="recurrente" checked /><div><b>Tarjeta de crédito o débito</b><span>Pago seguro con enlace de Recurrente.</span></div></label>
+            <label class="metodo"><input type="radio" name="metodo" value="paypal" /><div><b>PayPal</b><span>Con tu cuenta PayPal o tarjeta internacional.</span></div></label>
+            <label class="metodo"><input type="radio" name="metodo" value="transferencia" /><div><b>Transferencia o depósito bancario</b><span>Te damos los datos de la cuenta y subes la foto de la boleta.</span></div></label>
+            <label class="metodo"><input type="radio" name="metodo" value="billetera" /><div><b>Billetera electrónica</b><span>Paga desde tu billetera del banco y sube el comprobante.</span></div></label>
+          </fieldset>
+          <p class="mensaje-error" hidden role="alert" data-error></p>
+        </form>
+      </div>
+      <aside class="resumen" aria-label="Resumen del pedido">
+        <h2 style="font-size:1.4rem;margin:0">Resumen</h2>
+        <div class="totales">
+          <div><span>Subtotal</span><span data-subtotal></span></div>
+          <div data-fila-envio><span>Envío</span><span data-envio-monto></span></div>
+          <div class="total"><span>Total</span><span data-total></span></div>
+        </div>
+        <button class="btn" type="button" data-pagar>Confirmar pedido</button>
+        <div hidden data-respaldo style="display:grid;gap:10px">
+          <p class="nota">Los pagos en línea todavía no están activos en esta vista previa. Puedes enviar tu pedido por WhatsApp y el equipo te confirma.</p>
+          <a class="btn whatsapp" href="#" target="_blank" rel="noopener" data-enviar-wa><IconoWhatsApp />Enviar pedido por WhatsApp</a>
+        </div>
+        <p class="nota">Al confirmar aceptas que Publicaciones Pneuma use tus datos solo para este pedido.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    import { leerCarrito, cambiarCantidad, quitar, vaciar, subtotal, tieneImpresos, quetzales, nombreModalidad, guardarPedido, type Linea } from '../scripts/carrito'
+    import { api, sinApi, ErrorApi } from '../scripts/api'
+
+    const lleno = document.querySelector<HTMLElement>('[data-lleno]')!
+    const vacioEl = document.querySelector<HTMLElement>('[data-vacio]')!
+    const ul = document.querySelector<HTMLUListElement>('[data-lineas]')!
+    const form = document.querySelector<HTMLFormElement>('[data-pago]')!
+    const errorEl = document.querySelector<HTMLElement>('[data-error]')!
+    const pagar = document.querySelector<HTMLButtonElement>('[data-pagar]')!
+    const respaldo = document.querySelector<HTMLElement>('[data-respaldo]')!
+    let envio = Number(lleno.dataset.envio)
+
+    api<{ envio_gtq?: number }>('/ajustes/publicos').then((a) => { if (typeof a.envio_gtq === 'number') { envio = a.envio_gtq; pintar() } }).catch(() => {})
+
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
+    const conEnvio = () => tieneImpresos() && (form.elements.namedItem('entrega') as RadioNodeList).value === 'domicilio'
+
+    function pintar() {
+      const l = leerCarrito()
+      vacioEl.hidden = l.length > 0
+      lleno.hidden = l.length === 0
+      ul.innerHTML = l.map((x) => `
+        <li class="linea" data-id="${esc(x.libro_id)}" data-m="${x.modalidad}">
+          ${x.portada_url ? `<img class="portada" src="${esc(x.portada_url)}" alt="" />` : `<div class="portada" style="background:#04044A"></div>`}
+          <div><a class="t" href="/libros/${esc(x.slug)}">${esc(x.titulo)}</a><div class="a">${esc(x.autor)} · ${nombreModalidad(x.modalidad)}</div></div>
+          <div class="der">
+            ${x.modalidad === 'impreso' ? `<div class="cantidad"><button type="button" aria-label="Quitar uno" data-d="-1">−</button><input type="number" min="1" max="99" value="${x.cantidad}" aria-label="Cantidad de ${esc(x.titulo)}" /><button type="button" aria-label="Agregar uno" data-d="1">+</button></div>` : ''}
+            <b>${quetzales(x.precio * x.cantidad)}</b>
+            <button class="quitar" type="button" data-quitar>Quitar</button>
+          </div>
+        </li>`).join('')
+      const sub = subtotal(l)
+      const env = conEnvio() ? envio : 0
+      document.querySelector('[data-subtotal]')!.textContent = quetzales(sub)
+      document.querySelector('[data-envio-monto]')!.textContent = tieneImpresos(l) ? (env ? quetzales(env) : 'Sin costo') : 'No aplica'
+      document.querySelector('[data-total]')!.textContent = quetzales(sub + env)
+      document.querySelector<HTMLElement>('[data-bloque-entrega]')!.hidden = !tieneImpresos(l)
+      document.querySelector<HTMLElement>('[data-direccion]')!.hidden = !conEnvio()
+    }
+
+    ul.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement
+      const li = t.closest<HTMLElement>('.linea'); if (!li) return
+      const id = li.dataset.id!, m = li.dataset.m as Linea['modalidad']
+      if (t.closest('[data-quitar]')) quitar(id, m)
+      const d = t.closest<HTMLElement>('[data-d]')
+      if (d) cambiarCantidad(id, m, Number(li.querySelector('input')!.value) + Number(d.dataset.d))
+      pintar()
+    })
+    ul.addEventListener('change', (e) => {
+      const i = e.target as HTMLInputElement; const li = i.closest<HTMLElement>('.linea')!
+      cambiarCantidad(li.dataset.id!, li.dataset.m as Linea['modalidad'], Number(i.value)); pintar()
+    })
+    form.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).name === 'entrega') pintar() })
+
+    function validar(): string | null {
+      const d = new FormData(form)
+      if (!String(d.get('nombre')).trim()) return 'Escribe tu nombre.'
+      if (String(d.get('telefono')).replace(/\D/g, '').length < 8) return 'Escribe un teléfono de 8 dígitos.'
+      if (!/^\S+@\S+\.\S+$/.test(String(d.get('correo')))) return 'Escribe un correo válido.'
+      if (conEnvio() && (!String(d.get('direccion')).trim() || !String(d.get('municipio')).trim())) return 'Escribe la dirección y el municipio de entrega.'
+      return null
+    }
+
+    function mensajeWhatsApp() {
+      const d = new FormData(form)
+      const l = leerCarrito()
+      const env = conEnvio() ? envio : 0
+      const lineas = l.map((x) => `• ${x.cantidad} × ${x.titulo} (${nombreModalidad(x.modalidad)}) ${quetzales(x.precio * x.cantidad)}`).join('\n')
+      const entrega = !tieneImpresos(l) ? '' : conEnvio() ? `\nEnvío a: ${d.get('direccion')}, ${d.get('municipio')}, ${d.get('departamento')}${d.get('referencia') ? ` (${d.get('referencia')})` : ''}` : '\nRecojo en la oficina.'
+      return `Hola, quiero hacer este pedido:\n${lineas}\nEnvío: ${quetzales(env)}\nTotal: ${quetzales(subtotal(l) + env)}\n\nNombre: ${d.get('nombre')}\nTeléfono: ${d.get('telefono')}\nCorreo: ${d.get('correo')}${entrega}\nPago: ${(form.querySelector('input[name="metodo"]:checked') as HTMLInputElement).closest('label')!.querySelector('b')!.textContent}`
+    }
+
+    pagar.addEventListener('click', async () => {
+      const err = validar()
+      errorEl.hidden = !err; errorEl.textContent = err ?? ''
+      if (err) { form.querySelector<HTMLElement>(':invalid, input:not([type=radio])')?.focus(); return }
+      const d = new FormData(form)
+      const correo = String(d.get('correo')).trim()
+      const cuerpo = {
+        items: leerCarrito().map((x) => ({ modalidad: x.modalidad, libro_id: x.libro_id, cantidad: x.cantidad })),
+        metodo: d.get('metodo'), correo, nombre: String(d.get('nombre')).trim(), telefono: String(d.get('telefono')).trim(),
+        entrega: conEnvio() ? { direccion: d.get('direccion'), municipio: d.get('municipio'), departamento: d.get('departamento'), referencia: d.get('referencia') || undefined } : null,
+      }
+      pagar.disabled = true; pagar.textContent = 'Creando tu pedido…'
+      try {
+        const r = await api<{ pedido: { id: string; codigo: string }; enlace_pago: string | null }>('/pedidos', { method: 'POST', body: JSON.stringify(cuerpo) })
+        guardarPedido({ id: r.pedido.id, codigo: r.pedido.codigo, correo })
+        vaciar()
+        if (r.enlace_pago) location.href = r.enlace_pago
+        else location.href = `/pedido/${encodeURIComponent(r.pedido.codigo)}?correo=${encodeURIComponent(correo)}`
+      } catch (e) {
+        pagar.disabled = false; pagar.textContent = 'Confirmar pedido'
+        if (sinApi(e)) {
+          respaldo.hidden = false
+          respaldo.querySelector<HTMLAnchorElement>('[data-enviar-wa]')!.href = `${lleno.dataset.whatsapp}?text=${encodeURIComponent(mensajeWhatsApp())}`
+          return
+        }
+        errorEl.hidden = false
+        errorEl.textContent = e instanceof ErrorApi && e.codigo === 'pasarela_no_configurada'
+          ? 'El pago con tarjeta o PayPal todavía no está activo. Elige transferencia o billetera, o envía el pedido por WhatsApp.'
+          : (e as Error).message
+      }
+    })
+    window.addEventListener('carrito', pintar)
+    pintar()
+  </script>
+</Base>

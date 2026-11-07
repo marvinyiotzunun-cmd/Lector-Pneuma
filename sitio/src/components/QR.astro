@@ -1,0 +1,10 @@
+---
+// Código QR generado al construir (SVG, sin servicios externos).
+import QRCode from 'qrcode'
+interface Props { texto: string; clase?: string; titulo?: string }
+const { texto, clase, titulo } = Astro.props
+const svg = await QRCode.toString(texto, { type: 'svg', margin: 0, color: { dark: '#04044A', light: '#FFFFFF' }, errorCorrectionLevel: 'M' })
+const interior = svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
+const viewBox = svg.match(/viewBox="([^"]+)"/)?.[1]
+---
+<svg class={clase} viewBox={viewBox} role="img" aria-label={titulo ?? 'Código QR'} shape-rendering="crispEdges" set:html={interior} />

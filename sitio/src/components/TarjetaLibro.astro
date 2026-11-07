@@ -1,0 +1,17 @@
+---
+import type { Libro } from '../lib/datos'
+import { quetzales } from '../lib/datos'
+import Portada from './Portada.astro'
+interface Props { libro: Libro; carga?: 'lazy' | 'eager' }
+const { libro, carga } = Astro.props
+const precio = libro.impreso?.precio_gtq ?? libro.digital?.precio_compra_gtq
+---
+<a class="tarjeta" href={`/libros/${libro.slug}`} data-libro data-texto={`${libro.titulo} ${libro.autor} ${libro.ministerio ?? ''} ${libro.categoria ?? ''}`.toLowerCase()} data-categoria={libro.categoria ?? ''}>
+  <Portada libro={libro} carga={carga} />
+  <span class="t">{libro.titulo}</span>
+  <span class="a">{libro.autor}</span>
+  <span class="p">
+    {precio != null && <b>{quetzales(precio)}</b>}
+    {libro.digital && <span class="etiqueta">También digital</span>}
+  </span>
+</a>
