@@ -55,7 +55,7 @@ export interface NuevoPedido {
   canal: 'whatsapp';
   cliente: { telefono: string; nombre: string };
   items: { libro_id: string; cantidad: number; modalidad: 'impreso' }[];
-  entrega: { direccion: string; municipio: string; departamento: string } | null;
+  entrega: { nombre?: string; direccion: string; municipio: string; departamento: string } | null;
   metodo_pago: MetodoPago;
 }
 

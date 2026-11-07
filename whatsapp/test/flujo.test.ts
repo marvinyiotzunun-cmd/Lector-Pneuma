@@ -90,7 +90,7 @@ describe('flujo de pedido', () => {
         { libro_id: 'salmos-escogidos', cantidad: 2, modalidad: 'impreso' },
         { libro_id: 'devocional-365', cantidad: 1, modalidad: 'impreso' },
       ],
-      entrega: { direccion: 'María López · 7a. avenida 32-31, zona 11', municipio: 'Mixco', departamento: 'Guatemala' },
+      entrega: { nombre: 'María López', direccion: '7a. avenida 32-31, zona 11', municipio: 'Mixco', departamento: 'Guatemala' },
       metodo_pago: 'transferencia',
     });
     const [esperando] = await enviar({ texto: 'ya pagué' });

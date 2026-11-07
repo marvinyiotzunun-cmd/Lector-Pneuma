@@ -258,7 +258,7 @@ export class Bot {
         canal: 'whatsapp',
         cliente: { telefono: s.telefono, nombre: e.nombre ?? s.nombre ?? '' },
         items: s.datos.carrito.map((i) => ({ libro_id: i.libro_id, cantidad: i.cantidad, modalidad: 'impreso' })),
-        entrega: e.tipo === 'envio' ? { direccion: `${e.nombre} · ${e.direccion}`, municipio: e.municipio!, departamento: e.departamento! } : null,
+        entrega: e.tipo === 'envio' ? { nombre: e.nombre, direccion: e.direccion!, municipio: e.municipio!, departamento: e.departamento! } : null,
         metodo_pago: metodo,
       });
     } catch (err) {
