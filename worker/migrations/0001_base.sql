@@ -16,7 +16,11 @@ INSERT INTO ajustes (clave, valor) VALUES
   ('paginas_por_minuto', '40'),
   ('envio_centavos', '3500'),
   ('asistente_tope_centavos_usd', '1000'),
-  ('datos_transferencia', 'Banrural · Cuenta monetaria en quetzales · (pendiente de que Pneuma indique la cuenta)');
+  ('tipo_cambio_usd', '7.63'),                -- Q por US$1, para cobrar en PayPal
+  ('whatsapp', ''),                           -- número de WhatsApp de Pneuma, ej. 50212345678
+  ('cuentas_bancarias', '[]'),                -- JSON [{banco, tipo, numero, nombre}], lo llena Pneuma
+  ('billeteras', '[]'),                       -- JSON [{nombre, numero, instrucciones}]
+  ('direccion_recogida', '7a. avenida 32-31, zona 11, Las Charcas, Guatemala');
 
 -- ---------- Usuarios y acceso ----------
 CREATE TABLE usuarios (
