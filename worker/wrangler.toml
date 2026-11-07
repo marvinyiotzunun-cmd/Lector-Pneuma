@@ -1,0 +1,35 @@
+# Backend de Publicaciones Pneuma. Ver docs/api.md.
+name = "pneuma-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# En producción la API vive en el mismo dominio que el sitio:
+# routes = [{ pattern = "pneuma.gt/api/*", zone_name = "pneuma.gt" }]
+
+[vars]
+SITIO_URL = "http://localhost:5173"
+CORREO_REMITENTE = "Publicaciones Pneuma <no-responder@pneuma.gt>"
+CORREO_PROVEEDOR = "consola"          # cloudflare | resend | consola
+ADMIN_CORREOS = ""                    # separados por coma; entran como admin la primera vez
+WHATSAPP_WORKER_URL = ""
+PAYPAL_MODO = "sandbox"               # sandbox | live
+ASISTENTE_MODELO = "claude-opus-5-5"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pneuma"
+database_id = "00000000-0000-0000-0000-000000000000" # reemplazar con: wrangler d1 create pneuma
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "ARCHIVOS"
+bucket_name = "pneuma-archivos"
+
+# Correo de Cloudflare (activar con: wrangler email sending enable pneuma.gt)
+# [[send_email]]
+# name = "EMAIL"
+
+# Tareas programadas: vencer alquileres y suscripciones, limpiar enlaces y eventos viejos.
+[triggers]
+crons = ["17 6 * * *"]
